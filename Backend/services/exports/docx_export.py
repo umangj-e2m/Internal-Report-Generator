@@ -2,10 +2,10 @@ from io import BytesIO
 
 from docx import Document
 from docx.document import Document as DocxDocument
-from docx.enum.table import WD_TABLE_ALIGNMENT
-from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
-from docx.oxml import OxmlElement
-from docx.oxml.ns import qn
+from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT, WD_TABLE_ALIGNMENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING, WD_TAB_ALIGNMENT
+from docx.oxml import OxmlElement, parse_xml
+from docx.oxml.ns import nsmap, qn
 from docx.section import Section
 from docx.shared import Emu, Mm, Pt, RGBColor
 from docx.table import Table, _Cell
@@ -13,6 +13,7 @@ from docx.text.paragraph import Paragraph
 
 from config import get_settings
 from models.db import Report, ReportPage
+from services.exports.charts import ReportChart, build_charts, build_page_chart
 from services.exports.helpers import compute_totals, generated_at_label, logo_path, page_description
 from services.reports.helpers import share_url
 from services.shared.constants import (
@@ -36,6 +37,26 @@ PAGE_HEIGHT = Mm(297)
 SIDE_MARGIN = Mm(16)
 CONTENT_WIDTH = Emu(PAGE_WIDTH - 2 * SIDE_MARGIN)
 SUMMARY_COLUMN_WIDTHS = (Mm(9), Mm(54), Mm(70), Mm(15), Mm(13), Mm(17))
+HEADER_COLUMN_WIDTHS = (Mm(12), Mm(80), Emu(CONTENT_WIDTH - Mm(92)))
+METRIC_GAP = Mm(3.5)
+FONT_NAME = "Segoe UI"
+METRIC_CARD_HEIGHT = Mm(17.5)
+DETAILS_BOX_HEIGHT = Mm(27)
+DETAILS_BOX_RADIUS = 7_000
+DETAILS_VALUE_OFFSET = Mm(37.5)
+STATS_COLUMN_SHARES = (0.22, 0.22, 0.22, 0.34)
+TAG_SIZE = (Mm(6.9), Mm(4.2))
+TAG_RADIUS = 19_000
+TAG_BASELINE_SHIFT_HALF_PT = -5
+SUMMARY_PADDING = (150, 150, 180, 180)  # top, bottom, left, right in dxa (7.5pt / 9pt)
+METRIC_CARD_RADIUS = 10_000  # DrawingML roundRect "adj": 1/100000 of the shorter side
+METRIC_ACCENT_PCT = 5_000  # orange top band as 1/100000 of the card height (~3px)
+PAGE_BADGE_SIZE = (Mm(11), Mm(8.5))
+PAGE_BADGE_RADIUS = 18_000
+PAGE_BADGE_WIDTH = Mm(14)
+PAGE_TITLE_TOP_SPACE = Pt(12)
+HEADING_H2_INDENT = Mm(4.8)
+WPS_NS = "http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
 
 # OOXML requires child elements in schema order; these are the siblings that must come after.
 _PPR_AFTER_PBDR = (
@@ -45,12 +66,19 @@ _PPR_AFTER_PBDR = (
     "w:suppressOverlap", "w:jc", "w:textDirection", "w:textAlignment", "w:textboxTightWrap",
     "w:outlineLvl", "w:divId", "w:cnfStyle", "w:rPr", "w:sectPr", "w:pPrChange",
 )
-_PPR_AFTER_SHD = _PPR_AFTER_PBDR[1:]
 _TCPR_AFTER_BORDERS = (
     "w:shd", "w:noWrap", "w:tcMar", "w:textDirection", "w:tcFitText", "w:vAlign", "w:hideMark",
     "w:headers", "w:cellIns", "w:cellDel", "w:cellMerge", "w:tcPrChange",
 )
 _TCPR_AFTER_SHD = _TCPR_AFTER_BORDERS[1:]
+_RPR_AFTER_SHD = (
+    "w:fitText", "w:vertAlign", "w:rtl", "w:cs", "w:em", "w:lang", "w:eastAsianLayout",
+    "w:specVanish", "w:oMath",
+)
+_RPR_AFTER_POSITION = (
+    "w:sz", "w:szCs", "w:highlight", "w:u", "w:effect", "w:bdr", "w:shd", *_RPR_AFTER_SHD,
+)
+_RPR_AFTER_SPACING = ("w:w", "w:kern", "w:position", *_RPR_AFTER_POSITION)
 _TBLPR_AFTER_BORDERS = ("w:shd", "w:tblLayout", "w:tblCellMar", "w:tblLook", "w:tblCaption",
                         "w:tblDescription", "w:tblPrChange")
 _TBLPR_AFTER_CELL_MARGINS = ("w:tblLook", "w:tblCaption", "w:tblDescription", "w:tblPrChange")
@@ -67,6 +95,7 @@ def render_report_docx(report: Report) -> bytes:
 
     _build_cover(doc, report)
     _build_summary(doc, report)
+    _build_charts(doc, report)
     for page in report.pages:
         _build_page_section(doc, page)
 
@@ -89,14 +118,14 @@ def _setup_page(section: Section) -> None:
 
 def _setup_styles(doc: DocxDocument) -> None:
     normal = doc.styles["Normal"]
-    normal.font.name = "Calibri"
+    _set_style_font(normal)
     normal.font.size = Pt(10.5)
     normal.font.color.rgb = RGBColor.from_string("1F2937")
     normal.paragraph_format.space_after = Pt(6)
     normal.paragraph_format.line_spacing = 1.15
 
     heading1 = doc.styles["Heading 1"]
-    heading1.font.name = "Calibri"
+    _set_style_font(heading1)
     heading1.font.size = Pt(15)
     heading1.font.bold = True
     heading1.font.color.rgb = PRIMARY
@@ -104,7 +133,7 @@ def _setup_styles(doc: DocxDocument) -> None:
     heading1.paragraph_format.space_after = Pt(6)
 
     heading2 = doc.styles["Heading 2"]
-    heading2.font.name = "Calibri"
+    _set_style_font(heading2)
     heading2.font.size = Pt(11.5)
     heading2.font.bold = True
     heading2.font.color.rgb = PRIMARY
@@ -112,20 +141,50 @@ def _setup_styles(doc: DocxDocument) -> None:
     heading2.paragraph_format.space_after = Pt(4)
 
 
+def _set_style_font(style) -> None:
+    style.font.name = FONT_NAME
+    r_fonts = style.element.rPr.rFonts
+    r_fonts.set(qn("w:eastAsia"), FONT_NAME)
+    r_fonts.set(qn("w:cs"), FONT_NAME)
+    # Built-in styles point at theme fonts, which take precedence over explicit names.
+    for attribute in ("w:asciiTheme", "w:hAnsiTheme", "w:eastAsiaTheme", "w:cstheme"):
+        r_fonts.attrib.pop(qn(attribute), None)
+
+
 def _build_header(section: Section, site_name: str) -> None:
-    paragraph = section.header.paragraphs[0]
-    # The built-in "Header"/"Footer" styles carry a centre tab stop that would catch the first tab.
-    paragraph.style = "Normal"
-    paragraph.paragraph_format.tab_stops.add_tab_stop(CONTENT_WIDTH, WD_TAB_ALIGNMENT.RIGHT)
-    paragraph.paragraph_format.space_after = Pt(0)
+    header = section.header
+    table = header.add_table(rows=1, cols=3, width=CONTENT_WIDTH)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.autofit = False
+    _set_table_borders(table, None, margins=(0, 110, 0, 0))
+    _set_column_widths(table, HEADER_COLUMN_WIDTHS)
+
+    # A header must end with a paragraph, so the table goes before the default one, which is collapsed.
+    trailing = header.paragraphs[0]
+    trailing._p.addprevious(table._tbl)
+    _collapse_paragraph(trailing)
+
+    logo_cell, brand_cell, title_cell = table.rows[0].cells
+    for cell in table.rows[0].cells:
+        cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+        _set_cell_border(cell, "bottom", BORDER_HEX, size=6)
+        cell.paragraphs[0].paragraph_format.space_after = Pt(0)
+        cell.paragraphs[0].paragraph_format.line_spacing = 1.0
 
     logo = logo_path()
     if logo:
-        paragraph.add_run().add_picture(str(logo), height=Mm(9))
-    _run(paragraph, f"  {get_settings().report_brand_name}", size=10, bold=True, color=PRIMARY)
-    _run(paragraph, f"\t{REPORT_TITLE} · ", size=8, color=MUTED)
-    _run(paragraph, site_name, size=8, bold=True, color=PRIMARY)
-    _set_paragraph_border(paragraph, "bottom")
+        logo_cell.paragraphs[0].add_run().add_picture(str(logo), width=Mm(9), height=Mm(9))
+    _run(brand_cell.paragraphs[0], get_settings().report_brand_name, size=10, bold=True,
+         color=PRIMARY)
+
+    title_line = title_cell.paragraphs[0]
+    title_line.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    _run(title_line, REPORT_TITLE, size=8, color=MUTED)
+    site_line = title_cell.add_paragraph()
+    site_line.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    site_line.paragraph_format.space_after = Pt(0)
+    site_line.paragraph_format.line_spacing = 1.0
+    _run(site_line, site_name, size=8, bold=True, color=PRIMARY)
 
 
 def _build_footer(section: Section, site_name: str) -> None:
@@ -148,7 +207,7 @@ def _build_cover(doc: DocxDocument, report: Report) -> None:
 
     eyebrow = doc.add_paragraph()
     eyebrow.paragraph_format.space_after = Pt(2)
-    _run(eyebrow, REPORT_TITLE.upper(), size=8.5, bold=True, color=ACCENT)
+    _letter_spacing(_run(eyebrow, REPORT_TITLE.upper(), size=8.5, bold=True, color=ACCENT), 1.2)
 
     title = doc.add_paragraph()
     title.paragraph_format.space_after = Pt(2)
@@ -164,15 +223,29 @@ def _build_cover(doc: DocxDocument, report: Report) -> None:
         ("Total links", f"{totals.links:,}"),
         ("Total images", f"{totals.images:,}"),
     ]
-    table = _new_table(doc, rows=1, cols=len(metrics))
-    for cell, (label, value) in zip(table.rows[0].cells, metrics):
-        _shade(cell, SURFACE_HEX)
-        _set_cell_border(cell, "top", BRAND_ACCENT_HEX, size=18)
-        label_paragraph = cell.paragraphs[0]
-        label_paragraph.paragraph_format.space_after = Pt(0)
-        _run(label_paragraph, label.upper(), size=7.5, color=MUTED)
-        value_paragraph = cell.add_paragraph()
-        value_paragraph.paragraph_format.space_after = Pt(2)
+    # Separate cards: card columns alternate with narrow, unstyled gap columns.
+    cols = len(metrics) * 2 - 1
+    table = _new_table(doc, rows=1, cols=cols, borders=False)
+    _set_table_borders(table, None, margins=(0, 0, 0, 0))
+    card_width = Emu((CONTENT_WIDTH - METRIC_GAP * (len(metrics) - 1)) // len(metrics))
+    _set_column_widths(
+        table, [card_width if index % 2 == 0 else METRIC_GAP for index in range(cols)]
+    )
+    card_cells = table.rows[0].cells[::2]
+    for cell, (label, value) in zip(card_cells, metrics):
+        holder = cell.paragraphs[0]
+        _tighten(holder)
+        label_paragraph, value_paragraph = _rounded_box(
+            holder,
+            width=card_width,
+            height=METRIC_CARD_HEIGHT,
+            fill=_accent_top_fill(SURFACE_HEX, BRAND_ACCENT_HEX, METRIC_ACCENT_PCT),
+            outline=BORDER_HEX,
+            radius=METRIC_CARD_RADIUS,
+            insets=(Mm(3.2), Mm(3.2), Mm(3.2), Mm(2)),
+            paragraphs=2,
+        )
+        _letter_spacing(_run(label_paragraph, label.upper(), size=8, color=MUTED), 0.5)
         _run(value_paragraph, value, size=16, bold=True, color=PRIMARY)
 
     _spacer(doc)
@@ -181,14 +254,25 @@ def _build_cover(doc: DocxDocument, report: Report) -> None:
         ("Report generated", generated_at_label()),
         ("Shareable link", share_url(report.slug)),
     ]
-    details_table = _new_table(doc, rows=len(details), cols=2, borders=False)
-    _set_column_widths(details_table, (Mm(40), Emu(CONTENT_WIDTH - Mm(40))))
-    for row, (label, value) in zip(details_table.rows, details):
-        for cell in row.cells:
-            _shade(cell, SURFACE_HEX)
-        _run(row.cells[0].paragraphs[0], label, size=9.5, bold=True, color=MUTED)
-        _run(row.cells[1].paragraphs[0], value, size=9.5)
-    _spacer(doc)
+    holder = doc.add_paragraph()
+    _tighten(holder)
+    holder.paragraph_format.space_after = Pt(14)
+    rows = _rounded_box(
+        holder,
+        width=CONTENT_WIDTH,
+        height=DETAILS_BOX_HEIGHT,
+        fill=_solid_fill(SURFACE_HEX),
+        outline=None,
+        radius=DETAILS_BOX_RADIUS,
+        insets=(Mm(3.2), Mm(2.6), Mm(3.2), Mm(2.6)),
+        paragraphs=len(details),
+    )
+    for row, (label, value) in zip(rows, details):
+        row.paragraph_format.tab_stops.add_tab_stop(DETAILS_VALUE_OFFSET)
+        row.paragraph_format.space_before = Pt(3.5)
+        row.paragraph_format.space_after = Pt(3.5)
+        _run(row, f"{label}\t", bold=True, color=MUTED)
+        _run(row, value)
 
 
 def _build_summary(doc: DocxDocument, report: Report) -> None:
@@ -244,6 +328,7 @@ def _build_summary(doc: DocxDocument, report: Report) -> None:
         _align_numeric(total_cells[index], index)
     for cell in table.rows[-1].cells:
         _shade(cell, SURFACE_STRONG_HEX)
+        _set_cell_border(cell, "top", BRAND_PRIMARY_HEX, size=12)
 
     _set_column_widths(table, SUMMARY_COLUMN_WIDTHS, skip_last_row=True)
     merged.width = Emu(sum(SUMMARY_COLUMN_WIDTHS[:3]))
@@ -251,18 +336,79 @@ def _build_summary(doc: DocxDocument, report: Report) -> None:
         total_cells[index].width = SUMMARY_COLUMN_WIDTHS[index]
 
 
+def _build_charts(doc: DocxDocument, report: Report) -> None:
+    charts = build_charts(report, "png")
+    if not charts:
+        return
+
+    heading = doc.add_heading("Charts", level=1)
+    heading.paragraph_format.space_before = Pt(20)
+    heading.paragraph_format.keep_with_next = True
+    _set_paragraph_border(heading, "bottom", BRAND_ACCENT_HEX, size=12)
+    lead = doc.add_paragraph()
+    lead.paragraph_format.keep_with_next = True
+    _run(lead, "A visual comparison of the pages read from this website.", color=MUTED)
+
+    for chart in charts:
+        title = doc.add_paragraph()
+        title.paragraph_format.space_after = Pt(1)
+        title.paragraph_format.keep_with_next = True
+        _run(title, chart.title, size=11, bold=True, color=PRIMARY)
+        _add_chart_image(doc, chart, CONTENT_WIDTH)
+        doc.add_paragraph().paragraph_format.space_after = Pt(8)
+
+
+def _add_chart_image(doc: DocxDocument, chart: ReportChart, width: int) -> None:
+    caption = doc.add_paragraph()
+    caption.paragraph_format.space_after = Pt(4)
+    caption.paragraph_format.keep_with_next = True
+    _run(caption, chart.caption, size=9, color=MUTED)
+    picture = doc.add_paragraph()
+    _tighten(picture)
+    picture.add_run().add_picture(BytesIO(chart.image), width=width)
+
+
 def _build_page_section(doc: DocxDocument, page: ReportPage) -> None:
     settings = get_settings()
-    heading = doc.add_heading(level=1)
-    _run(heading, f"{page.position:02d}  ", size=15, bold=True, color=ACCENT)
-    _run(heading, page.title, size=15, bold=True, color=PRIMARY)
-    heading.paragraph_format.page_break_before = True
-    heading.paragraph_format.space_after = Pt(2)
+    # Word ignores page breaks inside tables and merges adjacent tables, so a collapsed
+    # paragraph carries the break and keeps this table apart from the previous one.
+    page_break = doc.add_paragraph()
+    page_break.paragraph_format.page_break_before = True
+    _collapse_paragraph(page_break)
+    page_break.paragraph_format.space_after = PAGE_TITLE_TOP_SPACE
 
-    url = doc.add_paragraph()
-    _set_paragraph_border(url, "bottom", BRAND_ACCENT_HEX, size=12)
-    url.paragraph_format.space_after = Pt(10)
+    heading_table = _new_table(doc, rows=1, cols=2, borders=False)
+    _set_table_borders(heading_table, None, margins=(0, 140, 0, 0))
+    _set_column_widths(
+        heading_table, (PAGE_BADGE_WIDTH, Emu(CONTENT_WIDTH - PAGE_BADGE_WIDTH))
+    )
+    badge_cell, title_cell = heading_table.rows[0].cells
+    for cell in (badge_cell, title_cell):
+        _set_cell_border(cell, "bottom", BRAND_ACCENT_HEX, size=12)
+
+    holder = badge_cell.paragraphs[0]
+    _tighten(holder)
+    (badge,) = _rounded_box(
+        holder,
+        width=PAGE_BADGE_SIZE[0],
+        height=PAGE_BADGE_SIZE[1],
+        fill=_solid_fill(BRAND_PRIMARY_HEX),
+        outline=None,
+        radius=PAGE_BADGE_RADIUS,
+        insets=(0, 0, 0, 0),
+        anchor="ctr",
+    )
+    badge.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _run(badge, f"{page.position:02d}", size=14, bold=True, color=WHITE)
+
+    title = title_cell.paragraphs[0]
+    title.style = "Heading 1"
+    title.paragraph_format.space_after = Pt(2)
+    _run(title, page.title, size=15, bold=True, color=PRIMARY)
+    url = title_cell.add_paragraph()
+    url.paragraph_format.space_after = Pt(0)
     _run(url, page.url, size=9, color=MUTED)
+    _spacer(doc)
 
     stats = (
         ("Words", f"{page.word_count:,}"),
@@ -271,11 +417,17 @@ def _build_page_section(doc: DocxDocument, page: ReportPage) -> None:
         ("Read on", format_display(page.fetched_at, settings.report_timezone)),
     )
     table = _new_table(doc, rows=2, cols=len(stats))
+    _set_column_widths(table, [Emu(int(CONTENT_WIDTH * share)) for share in STATS_COLUMN_SHARES])
     for cell, (label, _) in zip(table.rows[0].cells, stats):
         _shade(cell, SURFACE_STRONG_HEX)
-        _run(cell.paragraphs[0], label.upper(), size=7.5, bold=True, color=MUTED)
+        _letter_spacing(_run(cell.paragraphs[0], label.upper(), size=8, bold=True, color=MUTED), 0.5)
     for cell, (_, value) in zip(table.rows[1].cells, stats):
-        _run(cell.paragraphs[0], value, size=10.5, bold=True, color=PRIMARY)
+        _run(cell.paragraphs[0], value, size=11, bold=True, color=PRIMARY)
+
+    breakdown = build_page_chart(page, "png")
+    if breakdown:
+        doc.add_heading(breakdown.title, level=2).paragraph_format.keep_with_next = True
+        _add_chart_image(doc, breakdown, CONTENT_WIDTH)
 
     doc.add_heading("Meta description", level=2)
     if page.meta_description:
@@ -287,18 +439,34 @@ def _build_page_section(doc: DocxDocument, page: ReportPage) -> None:
     if page.headings:
         for item in page.headings:
             level = int(item.get("level", 1))
-            bullet = doc.add_paragraph(style="List Bullet" if level == 1 else "List Bullet 2")
-            bullet.paragraph_format.space_after = Pt(2)
-            _run(bullet, f"H{level}  ", size=8, bold=True, color=ACCENT if level == 1 else MUTED)
-            _run(bullet, item.get("text", ""))
+            line = doc.add_paragraph()
+            fmt = line.paragraph_format
+            fmt.space_before = Pt(4)
+            fmt.space_after = Pt(4)
+            # H2 is indented with a tab, not paragraph indent, so every row shares the same
+            # indent and Word draws the dashed separators full width between all of them.
+            fmt.tab_stops.add_tab_stop(HEADING_H2_INDENT)
+            _set_paragraph_border(line, "bottom", BORDER_HEX, size=6, space=3, style="dashed")
+            _set_paragraph_border(line, "between", BORDER_HEX, size=6, space=3, style="dashed")
+            if level > 1:
+                line.add_run("\t")
+            _tag(line, f"H{level}", BRAND_ACCENT_HEX if level == 1 else BRAND_MUTED_HEX)
+            _run(line, "  " + item.get("text", ""))
     else:
         _run(doc.add_paragraph(), "No H1 or H2 headings were found on this page.", italic=True, color=MUTED)
 
     doc.add_heading("Content summary", level=2)
-    summary = doc.add_paragraph(page.summary)
+    # A single-cell table (not a text box) so a long summary can still flow onto the next page.
+    box = _new_table(doc, rows=1, cols=1, borders=False)
+    _set_table_borders(box, None, margins=SUMMARY_PADDING)
+    cell = box.rows[0].cells[0]
+    _shade(cell, SURFACE_HEX)
+    _set_cell_border(cell, "left", BRAND_ACCENT_HEX, size=18)
+    summary = cell.paragraphs[0]
     summary.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    _set_paragraph_border(summary, "left", BRAND_ACCENT_HEX, size=18, space=8)
-    _shade_paragraph(summary, SURFACE_HEX)
+    summary.paragraph_format.space_after = Pt(0)
+    summary.paragraph_format.line_spacing = 1.2
+    _run(summary, page.summary)
 
 
 # ---------- Low-level helpers ----------
@@ -327,7 +495,9 @@ def _new_table(doc: DocxDocument, rows: int, cols: int, borders: bool = True) ->
     return table
 
 
-def _set_table_borders(table: Table, color: str | None) -> None:
+def _set_table_borders(table: Table, color: str | None,
+                       margins: tuple[int, int, int, int] = (70, 70, 110, 110)) -> None:
+    """Set table borders (None = no borders) and cell margins (top, bottom, left, right in dxa)."""
     tbl_pr = table._tbl.tblPr
     borders = OxmlElement("w:tblBorders")
     for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
@@ -339,15 +509,18 @@ def _set_table_borders(table: Table, color: str | None) -> None:
         else:
             element.set(qn("w:val"), "nil")
         borders.append(element)
+    for existing in tbl_pr.findall(qn("w:tblBorders")) + tbl_pr.findall(qn("w:tblCellMar")):
+        tbl_pr.remove(existing)
     tbl_pr.insert_element_before(borders, *_TBLPR_AFTER_BORDERS)
 
-    margins = OxmlElement("w:tblCellMar")
-    for edge, value in (("top", 70), ("bottom", 70), ("left", 110), ("right", 110)):
+    cell_margins = OxmlElement("w:tblCellMar")
+    for edge, value in zip(("top", "left", "bottom", "right"),
+                           (margins[0], margins[2], margins[1], margins[3])):
         element = OxmlElement(f"w:{edge}")
         element.set(qn("w:w"), str(value))
         element.set(qn("w:type"), "dxa")
-        margins.append(element)
-    tbl_pr.insert_element_before(margins, *_TBLPR_AFTER_CELL_MARGINS)
+        cell_margins.append(element)
+    tbl_pr.insert_element_before(cell_margins, *_TBLPR_AFTER_CELL_MARGINS)
 
 
 def _set_cell_border(cell: _Cell, edge: str, color: str, size: int = 4) -> None:
@@ -379,8 +552,90 @@ def _shade(cell: _Cell, fill: str) -> None:
     tc_pr.insert_element_before(_shading(fill), *_TCPR_AFTER_SHD)
 
 
-def _shade_paragraph(paragraph: Paragraph, fill: str) -> None:
-    paragraph._p.get_or_add_pPr().insert_element_before(_shading(fill), *_PPR_AFTER_SHD)
+def _tag(paragraph: Paragraph, text: str, fill: str) -> None:
+    """Small rounded white-on-colour label, lowered so it sits centred on the text line."""
+    (label,) = _rounded_box(
+        paragraph,
+        width=TAG_SIZE[0],
+        height=TAG_SIZE[1],
+        fill=_solid_fill(fill),
+        outline=None,
+        radius=TAG_RADIUS,
+        insets=(0, 0, 0, 0),
+        anchor="ctr",
+    )
+    label.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _run(label, text, size=7.5, bold=True, color=WHITE)
+    position = OxmlElement("w:position")
+    position.set(qn("w:val"), str(TAG_BASELINE_SHIFT_HALF_PT))
+    paragraph.runs[-1]._r.get_or_add_rPr().insert_element_before(position, *_RPR_AFTER_POSITION)
+
+
+def _letter_spacing(run, points: float):
+    spacing = OxmlElement("w:spacing")
+    spacing.set(qn("w:val"), str(round(points * 20)))
+    run._r.get_or_add_rPr().insert_element_before(spacing, *_RPR_AFTER_SPACING)
+    return run
+
+
+def _tighten(paragraph: Paragraph) -> None:
+    paragraph.paragraph_format.space_after = Pt(0)
+    paragraph.paragraph_format.line_spacing = 1.0
+
+
+def _solid_fill(color: str) -> str:
+    return f'<a:solidFill><a:srgbClr val="{color}"/></a:solidFill>'
+
+
+def _accent_top_fill(color: str, accent: str, accent_pct: int) -> str:
+    """Hard-stop gradient: a thin accent band along the top that follows the rounded corners."""
+    stops = ((0, accent), (accent_pct, accent), (accent_pct + 1, color), (100_000, color))
+    gs = "".join(f'<a:gs pos="{pos}"><a:srgbClr val="{value}"/></a:gs>' for pos, value in stops)
+    return f'<a:gradFill rotWithShape="1"><a:gsLst>{gs}</a:gsLst><a:lin ang="5400000" scaled="0"/></a:gradFill>'
+
+
+def _rounded_box(holder: Paragraph, width: int, height: int, fill: str, outline: str | None,
+                 radius: int, insets: tuple[int, int, int, int], anchor: str = "t",
+                 paragraphs: int = 1) -> list[Paragraph]:
+    """Add an inline rounded-rectangle text box to `holder`; returns its (editable) paragraphs."""
+    shape_id = 1000 + len(holder.part.element.findall(".//" + qn("wp:docPr")))
+    line = (
+        f'<a:ln w="9525"><a:solidFill><a:srgbClr val="{outline}"/></a:solidFill></a:ln>'
+        if outline else "<a:ln><a:noFill/></a:ln>"
+    )
+    left, top, right, bottom = (int(value) for value in insets)
+    xml = (
+        f'<w:drawing xmlns:w="{nsmap["w"]}" xmlns:wp="{nsmap["wp"]}" xmlns:a="{nsmap["a"]}" '
+        f'xmlns:wps="{WPS_NS}">'
+        '<wp:inline distT="0" distB="0" distL="0" distR="0">'
+        f'<wp:extent cx="{int(width)}" cy="{int(height)}"/>'
+        '<wp:effectExtent l="0" t="0" r="0" b="0"/>'
+        f'<wp:docPr id="{shape_id}" name="Box {shape_id}"/>'
+        "<wp:cNvGraphicFramePr/>"
+        f'<a:graphic><a:graphicData uri="{WPS_NS}"><wps:wsp><wps:cNvSpPr/>'
+        f'<wps:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{int(width)}" cy="{int(height)}"/></a:xfrm>'
+        f'<a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val {radius}"/></a:avLst></a:prstGeom>'
+        f"{fill}{line}</wps:spPr>"
+        "<wps:txbx><w:txbxContent>" + "<w:p/>" * paragraphs + "</w:txbxContent></wps:txbx>"
+        f'<wps:bodyPr rot="0" vert="horz" wrap="square" lIns="{left}" tIns="{top}" rIns="{right}" '
+        f'bIns="{bottom}" anchor="{anchor}" anchorCtr="0"><a:noAutofit/></wps:bodyPr>'
+        "</wps:wsp></a:graphicData></a:graphic></wp:inline></w:drawing>"
+    )
+    drawing = parse_xml(xml)
+    holder.add_run()._r.append(drawing)
+    content = drawing.find(".//" + qn("w:txbxContent"))
+    boxes = [Paragraph(p, holder._parent) for p in content.findall(qn("w:p"))]
+    for box in boxes:
+        _tighten(box)
+    return boxes
+
+
+def _collapse_paragraph(paragraph: Paragraph) -> None:
+    fmt = paragraph.paragraph_format
+    fmt.space_before = Pt(0)
+    fmt.space_after = Pt(0)
+    fmt.line_spacing_rule = WD_LINE_SPACING.EXACTLY
+    fmt.line_spacing = Pt(1)
 
 
 def _set_column_widths(table: Table, widths, skip_last_row: bool = False) -> None:
@@ -415,14 +670,14 @@ def _keep_row_together(row) -> None:
 
 
 def _set_paragraph_border(paragraph: Paragraph, edge: str, color: str = BORDER_HEX,
-                          size: int = 6, space: int = 4) -> None:
+                          size: int = 6, space: int = 4, style: str = "single") -> None:
     p_pr = paragraph._p.get_or_add_pPr()
     borders = p_pr.find(qn("w:pBdr"))
     if borders is None:
         borders = OxmlElement("w:pBdr")
         p_pr.insert_element_before(borders, *_PPR_AFTER_PBDR)
     element = OxmlElement(f"w:{edge}")
-    element.set(qn("w:val"), "single")
+    element.set(qn("w:val"), style)
     element.set(qn("w:sz"), str(size))
     element.set(qn("w:space"), str(space))
     element.set(qn("w:color"), color)

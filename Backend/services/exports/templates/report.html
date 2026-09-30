@@ -97,6 +97,22 @@
         </table>
       </section>
 
+      {% if charts %}
+      <section class="charts">
+        <h2 class="section-title">Charts</h2>
+        <p class="section-lead">A visual comparison of the pages read from this website.</p>
+        <div class="charts__grid">
+          {% for chart in charts %}
+          <figure class="chart{% if chart.wide %} chart--wide{% endif %}">
+            <h3 class="chart__title">{{ chart.title }}</h3>
+            <p class="chart__caption">{{ chart.caption }}</p>
+            <img src="{{ chart.data_uri }}" alt="{{ chart.title }} chart" />
+          </figure>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
       {% for page in pages %}
       <section class="page-section">
         <div class="page-heading">
@@ -126,6 +142,15 @@
           </tbody>
         </table>
 
+        {% set breakdown = page_chart(page) %}
+        {% if breakdown %}
+        <div class="block">
+          <h3 class="block__title">{{ breakdown.title }}</h3>
+          <p class="chart__caption">{{ breakdown.caption }}</p>
+          <img class="page-chart" src="{{ breakdown.data_uri }}" alt="{{ breakdown.title }} chart" />
+        </div>
+        {% endif %}
+
         <div class="block">
           <h3 class="block__title">Meta description</h3>
           {% if page.meta_description %}
@@ -135,7 +160,7 @@
           {% endif %}
         </div>
 
-        <div class="block">
+        <div class="block block--splittable">
           <h3 class="block__title">Key headings</h3>
           {% if page.headings %}
           <ul class="headings">
@@ -151,7 +176,7 @@
           {% endif %}
         </div>
 
-        <div class="block">
+        <div class="block block--splittable">
           <h3 class="block__title">Content summary</h3>
           <p class="summary-text">{{ page.summary }}</p>
         </div>

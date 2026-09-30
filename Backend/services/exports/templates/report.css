@@ -213,6 +213,18 @@ p {
 }
 
 .stats-table th {
+  width: 22%;
+}
+
+.stats-table th:last-child {
+  width: 34%;
+}
+
+.stats-table td {
+  white-space: nowrap;
+}
+
+.stats-table th {
   padding: 6px 10px;
   text-align: left;
   font-size: 8pt;
@@ -271,10 +283,15 @@ p {
   break-inside: avoid-page;
 }
 
+.block--splittable {
+  break-inside: auto;
+}
+
 .block__title {
   margin: 0 0 6px;
   font-size: 11pt;
   color: var(--primary);
+  break-after: avoid-page;
 }
 
 .headings {
@@ -318,12 +335,65 @@ p {
   background: var(--surface);
   border-left: 3px solid var(--accent);
   border-radius: 0 6px 6px 0;
+  orphans: 3;
+  widows: 3;
+}
+
+/* ---------- Charts ---------- */
+.charts__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px 16px;
+}
+
+.chart {
+  margin: 0;
+  break-inside: avoid;
+}
+
+.chart--wide {
+  grid-column: 1 / -1;
+}
+
+.chart__title {
+  margin: 0 0 2px;
+  font-size: 11pt;
+  color: var(--primary);
+}
+
+.chart__caption {
+  margin: 0 0 6px;
+  font-size: 9pt;
+  color: var(--muted);
+}
+
+.chart img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.page-chart {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 /* ---------- Print (PDF) mode ---------- */
 .mode-print .page-section {
   break-before: page;
   page-break-before: always;
+}
+
+.mode-print .charts {
+  margin-top: 26px;
+}
+
+.charts .section-title,
+.charts .section-lead,
+.chart__title,
+.chart__caption {
+  break-after: avoid-page;
 }
 
 /* ---------- Web (HTML view) mode ---------- */
@@ -378,6 +448,7 @@ p {
   padding: 32px 40px;
 }
 
+.mode-web .charts,
 .mode-web .page-section {
   margin-top: 36px;
 }
@@ -412,5 +483,9 @@ p {
 
   .col-description {
     display: none;
+  }
+
+  .charts__grid {
+    grid-template-columns: 1fr;
   }
 }
