@@ -1,9 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import LanguageIcon from '@mui/icons-material/Language';
 import { Alert, Box, Button, InputAdornment, Stack, TextField } from '@mui/material';
 import { useForm } from 'react-hook-form';
 
 import { APP_CONFIG } from '@/config/app.config';
+import { fadeInUp } from '@/styles/animations';
 import { normalizeWebsiteUrl, reportFormSchema } from '@/utils/validators';
 
 const HELPER_TEXT = `We read this page plus up to ${APP_CONFIG.MAX_PAGES_PER_REPORT - 1} linked pages on the same website.`;
@@ -52,6 +54,7 @@ function ReportForm({ onSubmit, isSubmitting = false, error }) {
           color="secondary"
           size="large"
           loading={isSubmitting}
+          endIcon={<ArrowForwardIcon />}
           sx={{ minWidth: 190, height: 56, flexShrink: 0, width: { xs: '100%', sm: 'auto' } }}
         >
           Generate report
@@ -59,7 +62,7 @@ function ReportForm({ onSubmit, isSubmitting = false, error }) {
       </Stack>
 
       {error ? (
-        <Alert severity="error" sx={{ mt: 2 }}>
+        <Alert severity="error" sx={{ mt: 2, ...fadeInUp() }}>
           {error.message}
         </Alert>
       ) : undefined}

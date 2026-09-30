@@ -4,6 +4,8 @@ import LinkIcon from '@mui/icons-material/Link';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import { Box, Grid, Paper, Typography } from '@mui/material';
 
+import { fadeInUp, hoverLift, STAGGER_MS } from '@/styles/animations';
+
 const FEATURES = [
   {
     icon: <PictureAsPdfOutlinedIcon />,
@@ -30,10 +32,38 @@ const FEATURES = [
 function FeatureHighlights() {
   return (
     <Grid container spacing={2} component="section" aria-label="Report formats">
-      {FEATURES.map((feature) => (
+      {FEATURES.map((feature, index) => (
         <Grid key={feature.title} size={{ xs: 12, sm: 6, md: 3 }}>
-          <Paper variant="outlined" sx={{ p: 2.5, height: '100%' }}>
-            <Box sx={{ color: 'secondary.main', mb: 1 }}>{feature.icon}</Box>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2.5,
+              height: '100%',
+              ...fadeInUp(320 + index * STAGGER_MS),
+              ...hoverLift,
+              '&:hover .feature-icon': {
+                bgcolor: 'secondary.main',
+                color: 'common.white',
+                transform: 'rotate(-6deg) scale(1.08)',
+              },
+            }}
+          >
+            <Box
+              className="feature-icon"
+              sx={{
+                width: 44,
+                height: 44,
+                mb: 1.5,
+                borderRadius: 2,
+                display: 'grid',
+                placeItems: 'center',
+                color: 'secondary.main',
+                bgcolor: 'rgba(242, 107, 33, 0.10)',
+                transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+              }}
+            >
+              {feature.icon}
+            </Box>
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }} gutterBottom>
               {feature.title}
             </Typography>

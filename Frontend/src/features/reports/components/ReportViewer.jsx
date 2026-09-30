@@ -1,8 +1,10 @@
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
-import { Box, Button, LinearProgress, Paper, Stack, Tab, Tabs } from '@mui/material';
+import { Box, Button, CircularProgress, Paper, Stack, Tab, Tabs } from '@mui/material';
 import { useState } from 'react';
+
+import { fadeInUp } from '@/styles/animations';
 
 import { reportService } from '../services/reportService';
 
@@ -22,18 +24,26 @@ function ReportViewer({ slug, title }) {
   };
 
   return (
-    <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+    <Paper variant="outlined" sx={{ overflow: 'hidden', ...fadeInUp(120) }}>
       <Stack
         direction="row"
         sx={{
-          px: { xs: 1, md: 2 },
+          px: { xs: 0.5, md: 2 },
           borderBottom: 1,
           borderColor: 'divider',
           alignItems: 'center',
           justifyContent: 'space-between',
         }}
       >
-        <Tabs value={view} onChange={handleChange} aria-label="Report view">
+        <Tabs
+          value={view}
+          onChange={handleChange}
+          aria-label="Report view"
+          textColor="secondary"
+          indicatorColor="secondary"
+          variant="scrollable"
+          scrollButtons={false}
+        >
           {Object.entries(VIEWS).map(([value, item]) => (
             <Tab
               key={value}
@@ -56,23 +66,46 @@ function ReportViewer({ slug, title }) {
         </Button>
       </Stack>
 
-      <Box sx={{ height: 4 }}>{isLoading ? <LinearProgress color="secondary" /> : undefined}</Box>
-
       <Box
-        component="iframe"
-        key={view}
-        src={src}
-        title={`${title} – ${VIEWS[view].label}`}
-        onLoad={() => setIsLoading(false)}
         sx={{
-          display: 'block',
-          width: '100%',
-          height: { xs: '75vh', md: 'calc(100vh - 240px)' },
-          minHeight: 560,
-          border: 0,
+          position: 'relative',
+          height: { xs: '70vh', md: 'calc(100vh - 240px)' },
+          minHeight: { xs: 480, md: 560 },
           bgcolor: '#ECEFF4',
         }}
-      />
+      >
+        {isLoading ? (
+          <Box
+            role="status"
+            aria-label="Loading preview"
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              display: 'grid',
+              placeItems: 'center',
+              ...fadeInUp(),
+            }}
+          >
+            <CircularProgress color="secondary" />
+          </Box>
+        ) : undefined}
+        <Box
+          component="iframe"
+          key={view}
+          src={src}
+          title={`${title} – ${VIEWS[view].label}`}
+          onLoad={() => setIsLoading(false)}
+          sx={{
+            display: 'block',
+            width: '100%',
+            height: '100%',
+            border: 0,
+            opacity: isLoading ? 0 : 1,
+            transform: isLoading ? 'translateY(8px)' : 'none',
+            transition: 'opacity 0.45s ease, transform 0.45s ease',
+          }}
+        />
+      </Box>
     </Paper>
   );
 }

@@ -24,6 +24,7 @@ import { useDeleteReport } from '@/features/reports/hooks/useDeleteReport';
 import { useReports } from '@/features/reports/hooks/useReports';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useNotification } from '@/hooks/useNotification';
+import { fadeInUp } from '@/styles/animations';
 import { DEFAULT_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '@/utils/constants';
 
 function Reports() {
@@ -111,8 +112,13 @@ function Reports() {
         spacing={2}
         sx={{ justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' } }}
       >
-        <Box>
-          <Typography variant="h4" component="h1" color="primary">
+        <Box sx={fadeInUp()}>
+          <Typography
+            variant="h4"
+            component="h1"
+            color="primary"
+            sx={{ fontSize: { xs: '1.75rem', md: '2.125rem' } }}
+          >
             Reports
           </Typography>
           <Typography color="text.secondary">
@@ -130,7 +136,7 @@ function Reports() {
         </Button>
       </Stack>
 
-      <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+      <Paper variant="outlined" sx={{ overflow: 'hidden', ...fadeInUp(120) }}>
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
           <TextField
             value={search}
@@ -138,7 +144,7 @@ function Reports() {
             placeholder="Search by website name or URL"
             size="small"
             fullWidth
-            sx={{ maxWidth: 420 }}
+            sx={{ maxWidth: { sm: 420 } }}
             slotProps={{
               input: {
                 startAdornment: (

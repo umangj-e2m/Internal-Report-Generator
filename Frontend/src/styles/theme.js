@@ -1,5 +1,7 @@
 import { createTheme } from '@mui/material/styles';
 
+const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+
 const theme = createTheme({
   palette: {
     primary: { main: '#1B2340' },
@@ -22,6 +24,31 @@ const theme = createTheme({
   components: {
     MuiButton: {
       defaultProps: { disableElevation: true },
+      styleOverrides: {
+        root: {
+          transition: `transform 0.2s ${EASE}, box-shadow 0.2s ${EASE}, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease`,
+          '&:hover': { transform: 'translateY(-1px)' },
+          '&:active': { transform: 'translateY(0)' },
+          '& .MuiButton-endIcon, & .MuiButton-startIcon': {
+            transition: `transform 0.25s ${EASE}`,
+          },
+          '&:hover .MuiButton-endIcon': { transform: 'translateX(3px)' },
+        },
+        containedSecondary: {
+          '&:hover': { boxShadow: '0 8px 20px rgba(242, 107, 33, 0.35)' },
+        },
+        containedPrimary: {
+          '&:hover': { boxShadow: '0 8px 20px rgba(27, 35, 64, 0.25)' },
+        },
+      },
+    },
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
+          transition: `transform 0.2s ${EASE}, background-color 0.2s ease, color 0.2s ease`,
+          '&:hover': { transform: 'scale(1.12)' },
+        },
+      },
     },
     MuiPaper: {
       defaultProps: { elevation: 0 },
@@ -29,9 +56,32 @@ const theme = createTheme({
         outlined: { borderColor: '#E5E7EB' },
       },
     },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          transition: 'box-shadow 0.25s ease',
+          '&.Mui-focused': { boxShadow: '0 0 0 4px rgba(242, 107, 33, 0.12)' },
+        },
+      },
+    },
+    MuiTableRow: {
+      styleOverrides: {
+        root: { transition: 'background-color 0.2s ease' },
+      },
+    },
     MuiTableCell: {
       styleOverrides: {
         head: { fontWeight: 600, color: '#5B6275', backgroundColor: '#F7F8FB' },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: { transition: 'color 0.2s ease', minHeight: 56 },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: { transition: 'background-color 0.2s ease, transform 0.2s ease' },
       },
     },
   },
