@@ -1,0 +1,229 @@
+[
+  {
+    "slug": "acme-cloud-docs-demo01",
+    "site_name": "Acme Cloud Docs",
+    "source_url": "https://docs.acmecloud.example/",
+    "pages": [
+      {
+        "url": "https://docs.acmecloud.example/",
+        "title": "Acme Cloud Documentation – Build, Deploy and Scale",
+        "meta_description": "Official documentation for Acme Cloud. Learn how to deploy applications, manage databases, configure networking and monitor workloads.",
+        "headings": [
+          { "level": 1, "text": "Acme Cloud Documentation" },
+          { "level": 2, "text": "Get started in five minutes" },
+          { "level": 2, "text": "Popular guides" },
+          { "level": 2, "text": "Platform services" },
+          { "level": 2, "text": "Need help?" }
+        ],
+        "summary": "Acme Cloud is a developer platform for deploying web applications, background workers and managed databases without maintaining servers. This documentation walks through account setup, the command-line tool, project configuration and production best practices. Start with the quick-start guide to deploy a sample application, then explore platform services such as managed PostgreSQL, object storage, private networking and built-in observability. Every guide includes copy-ready commands and configuration examples for Node.js, Python, Go and Java.",
+        "word_count": 1284,
+        "link_count": 96,
+        "image_count": 12
+      },
+      {
+        "url": "https://docs.acmecloud.example/getting-started",
+        "title": "Getting Started with Acme Cloud",
+        "meta_description": "Create an account, install the CLI and deploy your first application to Acme Cloud in minutes.",
+        "headings": [
+          { "level": 1, "text": "Getting Started" },
+          { "level": 2, "text": "1. Create your account" },
+          { "level": 2, "text": "2. Install the Acme CLI" },
+          { "level": 2, "text": "3. Initialise a project" },
+          { "level": 2, "text": "4. Deploy" },
+          { "level": 2, "text": "Next steps" }
+        ],
+        "summary": "This guide takes you from a new account to a running application. After signing up, install the Acme CLI using the package manager for your operating system and authenticate with the login command. Running the init command inside an existing repository detects the language and framework, then generates an acme.toml configuration file with sensible defaults for build commands, health checks and scaling. The deploy command packages the source, builds a container image and rolls it out with zero downtime. Once deployed, the dashboard shows build logs, the public URL and resource usage.",
+        "word_count": 1876,
+        "link_count": 54,
+        "image_count": 8
+      },
+      {
+        "url": "https://docs.acmecloud.example/databases/postgresql",
+        "title": "Managed PostgreSQL – Acme Cloud Docs",
+        "meta_description": "Provision, connect to, back up and scale fully managed PostgreSQL databases on Acme Cloud.",
+        "headings": [
+          { "level": 1, "text": "Managed PostgreSQL" },
+          { "level": 2, "text": "Creating a database" },
+          { "level": 2, "text": "Connecting from your application" },
+          { "level": 2, "text": "Backups and point-in-time recovery" },
+          { "level": 2, "text": "Read replicas" },
+          { "level": 2, "text": "Upgrading major versions" },
+          { "level": 2, "text": "Limits and pricing" }
+        ],
+        "summary": "Acme Cloud offers fully managed PostgreSQL versions 13 to 16 with automated daily backups, encryption at rest and private networking. Databases can be created from the dashboard or with a single CLI command, and connection strings are injected into linked services as environment variables. Point-in-time recovery lets you restore to any second within the retention window, which ranges from seven days on the starter plan to thirty-five days on business plans. Read replicas can be added in other regions to reduce latency for read-heavy workloads, and major version upgrades run with a short, scheduled maintenance window.",
+        "word_count": 2412,
+        "link_count": 61,
+        "image_count": 5
+      },
+      {
+        "url": "https://docs.acmecloud.example/networking",
+        "title": "Networking and Custom Domains",
+        "meta_description": "Configure custom domains, TLS certificates, private networks and firewall rules for your services.",
+        "headings": [
+          { "level": 1, "text": "Networking" },
+          { "level": 2, "text": "Custom domains" },
+          { "level": 2, "text": "Automatic TLS certificates" },
+          { "level": 2, "text": "Private networking between services" },
+          { "level": 2, "text": "IP allow lists" }
+        ],
+        "summary": "Every service receives a public acme.app subdomain, and custom domains can be attached by adding a CNAME or ALIAS record with your DNS provider. TLS certificates are issued and renewed automatically. Services within the same project communicate over an isolated private network using internal hostnames, so databases and internal APIs never need to be exposed to the internet. IP allow lists restrict inbound traffic to known office or partner addresses.",
+        "word_count": 1350,
+        "link_count": 47,
+        "image_count": 4
+      },
+      {
+        "url": "https://docs.acmecloud.example/monitoring",
+        "title": "Monitoring, Logs and Alerts",
+        "meta_description": "Track metrics, search logs and receive alerts for every service running on Acme Cloud.",
+        "headings": [
+          { "level": 1, "text": "Monitoring" },
+          { "level": 2, "text": "Metrics dashboard" },
+          { "level": 2, "text": "Log search" },
+          { "level": 2, "text": "Alert rules" },
+          { "level": 2, "text": "Exporting to third-party tools" }
+        ],
+        "summary": "The metrics dashboard shows CPU, memory, request latency and error rates for each service with one-minute resolution. Logs from all instances are collected automatically and can be searched by text, severity or time range for up to thirty days. Alert rules notify your team by email, Slack or webhook when a metric crosses a threshold, and all telemetry can be forwarded to external tools that support OpenTelemetry.",
+        "word_count": 1108,
+        "link_count": 39,
+        "image_count": 6
+      }
+    ]
+  },
+  {
+    "slug": "greenleaf-journal-demo02",
+    "site_name": "Greenleaf Journal",
+    "source_url": "https://greenleafjournal.example/",
+    "pages": [
+      {
+        "url": "https://greenleafjournal.example/",
+        "title": "Greenleaf Journal – Sustainable Living Made Simple",
+        "meta_description": "Practical articles on sustainable living, zero-waste homes, urban gardening and eco-friendly travel.",
+        "headings": [
+          { "level": 1, "text": "Sustainable living made simple" },
+          { "level": 2, "text": "Latest stories" },
+          { "level": 2, "text": "Start here" },
+          { "level": 2, "text": "Join 40,000 readers" }
+        ],
+        "summary": "Greenleaf Journal publishes practical, research-backed guides for people who want to reduce their environmental footprint without overhauling their entire lifestyle. Recent stories cover composting in small apartments, choosing energy-efficient appliances, and planning low-carbon holidays by train. New readers are encouraged to begin with the thirty-day starter challenge, which introduces one small habit change per day.",
+        "word_count": 842,
+        "link_count": 73,
+        "image_count": 18
+      },
+      {
+        "url": "https://greenleafjournal.example/urban-gardening-guide",
+        "title": "The Complete Urban Gardening Guide for Balconies and Rooftops",
+        "meta_description": "Everything you need to grow vegetables, herbs and flowers in small city spaces.",
+        "headings": [
+          { "level": 1, "text": "The Complete Urban Gardening Guide" },
+          { "level": 2, "text": "Assessing sunlight and space" },
+          { "level": 2, "text": "Choosing containers and soil" },
+          { "level": 2, "text": "Best crops for beginners" },
+          { "level": 2, "text": "Watering without waste" },
+          { "level": 2, "text": "Seasonal planting calendar" }
+        ],
+        "summary": "Growing food in the city starts with understanding how many hours of direct sunlight your balcony or rooftop receives. Leafy greens and herbs tolerate partial shade, while tomatoes, peppers and beans need at least six hours of sun. Lightweight fabric pots and a peat-free potting mix keep weight manageable on balconies, and self-watering containers reduce water use by up to forty percent. The guide closes with a month-by-month planting calendar for temperate and tropical climates.",
+        "word_count": 3190,
+        "link_count": 28,
+        "image_count": 22
+      },
+      {
+        "url": "https://greenleafjournal.example/about",
+        "title": "About Greenleaf Journal",
+        "meta_description": "Meet the writers and editors behind Greenleaf Journal and learn about our editorial standards.",
+        "headings": [
+          { "level": 1, "text": "About us" },
+          { "level": 2, "text": "Our mission" },
+          { "level": 2, "text": "Editorial standards" }
+        ],
+        "summary": "Greenleaf Journal was founded in 2019 by a small group of environmental scientists and journalists. Every article is fact-checked against peer-reviewed sources, and product recommendations are never paid placements. The team is fully remote and offsets its operational emissions through verified reforestation projects.",
+        "word_count": 614,
+        "link_count": 31,
+        "image_count": 6
+      }
+    ]
+  },
+  {
+    "slug": "northwind-studio-demo03",
+    "site_name": "northwindstudio.example",
+    "source_url": "https://northwindstudio.example/",
+    "pages": [
+      {
+        "url": "https://northwindstudio.example/",
+        "title": "Northwind Studio",
+        "meta_description": null,
+        "headings": [],
+        "summary": "Northwind Studio is an independent design practice creating brand identities, packaging and editorial layouts for small businesses and cultural organisations. Selected work includes the visual identity for a coastal music festival and a series of award-winning cookbook covers.",
+        "word_count": 186,
+        "link_count": 9,
+        "image_count": 14
+      }
+    ]
+  },
+  {
+    "slug": "brightpath-academy-demo04",
+    "site_name": "Brightpath Academy",
+    "source_url": "https://brightpath.example/",
+    "pages": [
+      {
+        "url": "https://brightpath.example/",
+        "title": "Brightpath Academy – Online Courses in Data and Design",
+        "meta_description": "Career-focused online courses in data analysis, UX design and product management, taught by industry mentors.",
+        "headings": [
+          { "level": 1, "text": "Learn skills employers are hiring for" },
+          { "level": 2, "text": "Our programmes" },
+          { "level": 2, "text": "How mentoring works" },
+          { "level": 2, "text": "Student outcomes" },
+          { "level": 2, "text": "Frequently asked questions" }
+        ],
+        "summary": "Brightpath Academy offers part-time online programmes in data analysis, UX design and product management. Each programme combines self-paced lessons with weekly one-to-one mentoring sessions from working professionals, and learners complete a portfolio of real-world projects before graduating. According to the academy's latest outcomes report, most graduates who were actively job-seeking found a relevant role within six months.",
+        "word_count": 1540,
+        "link_count": 82,
+        "image_count": 24
+      },
+      {
+        "url": "https://brightpath.example/courses/data-analysis",
+        "title": "Data Analysis Programme – Brightpath Academy",
+        "meta_description": "Master spreadsheets, SQL, Python and data visualisation in a 24-week mentored programme.",
+        "headings": [
+          { "level": 1, "text": "Data Analysis Programme" },
+          { "level": 2, "text": "What you will learn" },
+          { "level": 2, "text": "Curriculum" },
+          { "level": 2, "text": "Projects" },
+          { "level": 2, "text": "Tuition and financing" }
+        ],
+        "summary": "The twenty-four-week data analysis programme starts with spreadsheet modelling and progresses through SQL, Python with pandas, statistics and dashboard design. Learners analyse public datasets from transport, healthcare and retail, presenting their findings to mentors in recorded review sessions. Flexible monthly payment plans and income-share options are available in selected countries.",
+        "word_count": 2105,
+        "link_count": 44,
+        "image_count": 9
+      },
+      {
+        "url": "https://brightpath.example/courses/ux-design",
+        "title": "UX Design Programme – Brightpath Academy",
+        "meta_description": "Learn user research, wireframing, prototyping and usability testing with a dedicated mentor.",
+        "headings": [
+          { "level": 1, "text": "UX Design Programme" },
+          { "level": 2, "text": "Programme overview" },
+          { "level": 2, "text": "Tools you will use" },
+          { "level": 2, "text": "Capstone project" }
+        ],
+        "summary": "The UX design programme teaches the full design process, from interviewing users and mapping journeys to building interactive prototypes in Figma and running usability tests. The capstone project pairs learners with a non-profit organisation to redesign a real digital service, giving graduates a case study that demonstrates both research and visual design skills.",
+        "word_count": 1788,
+        "link_count": 41,
+        "image_count": 11
+      },
+      {
+        "url": "https://brightpath.example/mentors",
+        "title": "Meet Our Mentors",
+        "meta_description": "Our mentors are senior practitioners from leading technology companies and agencies.",
+        "headings": [
+          { "level": 1, "text": "Meet our mentors" },
+          { "level": 2, "text": "How mentors are selected" }
+        ],
+        "summary": "Every Brightpath mentor has at least five years of industry experience and completes a training course on giving constructive feedback before being matched with learners. Mentors currently work at product companies, consultancies and public-sector digital teams across three continents.",
+        "word_count": 932,
+        "link_count": 58,
+        "image_count": 36
+      }
+    ]
+  }
+]

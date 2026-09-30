@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ report.site_name }} · {{ report_title }}</title>
+    <style>
+      {% include "report.css" %}
+    </style>
+  </head>
+  <body class="mode-{{ mode }}">
+    {% if mode == "web" %}
+    <header class="web-header">
+      <div class="web-header__brand">
+        {% if logo_src %}<img src="{{ logo_src }}" alt="{{ brand_name }} logo" />{% endif %}
+        <span>{{ brand_name }}</span>
+      </div>
+      <div class="web-header__title">
+        <span>{{ report_title }}</span>
+        <strong>{{ report.site_name }}</strong>
+      </div>
+    </header>
+    {% endif %}
+
+    <main class="document">
+      <section class="cover">
+        <p class="eyebrow">{{ report_title }}</p>
+        <h1 class="cover__title">{{ report.site_name }}</h1>
+        <a class="cover__url" href="{{ report.source_url }}">{{ report.source_url }}</a>
+
+        <div class="metrics">
+          <div class="metric">
+            <span class="metric__label">Pages analysed</span>
+            <span class="metric__value">{{ report.page_count }}</span>
+          </div>
+          <div class="metric">
+            <span class="metric__label">Total words</span>
+            <span class="metric__value">{{ "{:,}".format(totals.words) }}</span>
+          </div>
+          <div class="metric">
+            <span class="metric__label">Total links</span>
+            <span class="metric__value">{{ "{:,}".format(totals.links) }}</span>
+          </div>
+          <div class="metric">
+            <span class="metric__label">Total images</span>
+            <span class="metric__value">{{ "{:,}".format(totals.images) }}</span>
+          </div>
+        </div>
+
+        <dl class="details">
+          <div><dt>Website read on</dt><dd>{{ created_at }}</dd></div>
+          <div><dt>Report generated</dt><dd>{{ generated_at }}</dd></div>
+          <div><dt>Shareable link</dt><dd><a href="{{ share_url }}">{{ share_url }}</a></dd></div>
+        </dl>
+      </section>
+
+      <section class="summary">
+        <h2 class="section-title">Summary</h2>
+        <p class="section-lead">
+          Overview of the {{ report.page_count }} page{{ "s" if report.page_count != 1 }} read from this website.
+          Each page is described in detail in the sections that follow.
+        </p>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="col-index">#</th>
+              <th class="col-page">Page</th>
+              <th class="col-description">Description</th>
+              <th class="num">Words</th>
+              <th class="num">Links</th>
+              <th class="num">Images</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for page in pages %}
+            <tr>
+              <td class="col-index">{{ page.position }}</td>
+              <td class="col-page">
+                <span class="cell-title">{{ page.title }}</span>
+                <span class="cell-url">{{ page.url }}</span>
+              </td>
+              <td class="col-description">{{ page_description(page) }}</td>
+              <td class="num">{{ "{:,}".format(page.word_count) }}</td>
+              <td class="num">{{ "{:,}".format(page.link_count) }}</td>
+              <td class="num">{{ "{:,}".format(page.image_count) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3">Total</td>
+              <td class="num">{{ "{:,}".format(totals.words) }}</td>
+              <td class="num">{{ "{:,}".format(totals.links) }}</td>
+              <td class="num">{{ "{:,}".format(totals.images) }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </section>
+
+      {% for page in pages %}
+      <section class="page-section">
+        <div class="page-heading">
+          <span class="page-heading__number">{{ "%02d" | format(page.position) }}</span>
+          <div>
+            <h2 class="page-heading__title">{{ page.title }}</h2>
+            <a class="page-heading__url" href="{{ page.url }}">{{ page.url }}</a>
+          </div>
+        </div>
+
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>Words</th>
+              <th>Links</th>
+              <th>Images</th>
+              <th>Read on</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{{ "{:,}".format(page.word_count) }}</td>
+              <td>{{ "{:,}".format(page.link_count) }}</td>
+              <td>{{ "{:,}".format(page.image_count) }}</td>
+              <td>{{ fetched_label(page.fetched_at) }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="block">
+          <h3 class="block__title">Meta description</h3>
+          {% if page.meta_description %}
+          <p>{{ page.meta_description }}</p>
+          {% else %}
+          <p class="muted">This page does not provide a meta description.</p>
+          {% endif %}
+        </div>
+
+        <div class="block">
+          <h3 class="block__title">Key headings</h3>
+          {% if page.headings %}
+          <ul class="headings">
+            {% for heading in page.headings %}
+            <li class="headings__item headings__item--h{{ heading.level }}">
+              <span class="tag">H{{ heading.level }}</span>
+              <span>{{ heading.text }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="muted">No H1 or H2 headings were found on this page.</p>
+          {% endif %}
+        </div>
+
+        <div class="block">
+          <h3 class="block__title">Content summary</h3>
+          <p class="summary-text">{{ page.summary }}</p>
+        </div>
+      </section>
+      {% endfor %}
+    </main>
+
+    {% if mode == "web" %}
+    <footer class="web-footer">
+      <span>{{ report.site_name }} · Generated {{ generated_at }}</span>
+      <span>{{ brand_name }}</span>
+    </footer>
+    {% endif %}
+  </body>
+</html>

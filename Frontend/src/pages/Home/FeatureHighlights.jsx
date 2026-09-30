@@ -1,0 +1,50 @@
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import LinkIcon from '@mui/icons-material/Link';
+import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
+import { Box, Grid, Paper, Typography } from '@mui/material';
+
+const FEATURES = [
+  {
+    icon: <PictureAsPdfOutlinedIcon />,
+    title: 'Print-ready PDF',
+    text: 'A4 layout with your logo in a fixed header and page numbers in the footer.',
+  },
+  {
+    icon: <DescriptionOutlinedIcon />,
+    title: 'Editable DOCX',
+    text: 'The same layout as a Word document, ready for edits and comments.',
+  },
+  {
+    icon: <ArticleOutlinedIcon />,
+    title: 'HTML view',
+    text: 'Read the full report right in the browser on any device.',
+  },
+  {
+    icon: <LinkIcon />,
+    title: 'Shareable link',
+    text: 'Every report gets its own URL you can send to anyone.',
+  },
+];
+
+function FeatureHighlights() {
+  return (
+    <Grid container spacing={2} component="section" aria-label="Report formats">
+      {FEATURES.map((feature) => (
+        <Grid key={feature.title} size={{ xs: 12, sm: 6, md: 3 }}>
+          <Paper variant="outlined" sx={{ p: 2.5, height: '100%' }}>
+            <Box sx={{ color: 'secondary.main', mb: 1 }}>{feature.icon}</Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }} gutterBottom>
+              {feature.title}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {feature.text}
+            </Typography>
+          </Paper>
+        </Grid>
+      ))}
+    </Grid>
+  );
+}
+
+export default FeatureHighlights;
