@@ -1,5 +1,5 @@
 import SearchOffIcon from '@mui/icons-material/SearchOff';
-import { Button, Stack } from '@mui/material';
+import { Button } from '@mui/material';
 import { useEffect } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 
@@ -8,7 +8,6 @@ import ErrorState from '@/components/common/ErrorState';
 import Loader from '@/components/common/Loader';
 import { APP_CONFIG } from '@/config/app.config';
 import { ROUTES } from '@/config/routes.config';
-import ReportSummaryCard from '@/features/reports/components/ReportSummaryCard';
 import ReportViewer from '@/features/reports/components/ReportViewer';
 import { useReport } from '@/features/reports/hooks/useReport';
 
@@ -46,12 +45,7 @@ function ReportView() {
     return <ErrorState title="Could not load report" message={error.message} onRetry={refetch} />;
   }
 
-  return (
-    <Stack spacing={3}>
-      <ReportSummaryCard report={report} />
-      <ReportViewer slug={report.slug} title={report.site_name} />
-    </Stack>
-  );
+  return <ReportViewer slug={report.slug} title={report.site_name} />;
 }
 
 export default ReportView;

@@ -3,5 +3,7 @@
   --color-accent: #f26b21;
   --color-border: #e5e7eb;
   --color-surface: #f7f8fb;
-  --header-height: 64px;
+  --header-height: 76px;
+  --sidebar-width: 248px;
+  --sidebar-mini-width: 76px;
 }

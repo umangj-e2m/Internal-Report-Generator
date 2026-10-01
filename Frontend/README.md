@@ -52,7 +52,7 @@ the PDF and DOCX headers.
 ```
 src/
 ├── components/common/   Loader, ErrorState, EmptyState, ConfirmDialog, ErrorBoundary, Notifications
-├── components/layout/   Header, Footer, MainLayout
+├── components/layout/   Header, Sidebar, MainLayout
 ├── config/              app, env and route configuration
 ├── features/reports/    components, hooks (React Query), services (API calls), utils
 ├── hooks/               useDebounce, useNotification, useCopyToClipboard

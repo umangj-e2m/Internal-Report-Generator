@@ -71,7 +71,7 @@ function ReportViewer({ slug, title }) {
       <Box
         sx={{
           position: 'relative',
-          height: { xs: '70vh', md: 'calc(100vh - 240px)' },
+          height: { xs: '70vh', md: 'calc(100vh - var(--header-height) - 120px)' },
           minHeight: { xs: 480, md: 560 },
           bgcolor: '#ECEFF4',
         }}

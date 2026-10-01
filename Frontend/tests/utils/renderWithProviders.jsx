@@ -6,10 +6,11 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import NotificationProvider from '@/components/common/Notifications';
 import theme from '@/styles/theme';
 
-export function renderWithProviders(ui, { route = '/', path = '*' } = {}) {
+export function renderWithProviders(ui, { route = '/', path = '*', layout } = {}) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
+  const page = <Route path={path} element={ui} />;
 
   return render(
     <ThemeProvider theme={theme}>
@@ -17,8 +18,10 @@ export function renderWithProviders(ui, { route = '/', path = '*' } = {}) {
         <NotificationProvider>
           <MemoryRouter initialEntries={[route]}>
             <Routes>
-              <Route path={path} element={ui} />
-              <Route path="/r/:slug" element={<div>Report page for test</div>} />
+              {layout ? <Route element={layout}>{page}</Route> : page}
+              {path === '/r/:slug' ? undefined : (
+                <Route path="/r/:slug" element={<div>Report page for test</div>} />
+              )}
             </Routes>
           </MemoryRouter>
         </NotificationProvider>

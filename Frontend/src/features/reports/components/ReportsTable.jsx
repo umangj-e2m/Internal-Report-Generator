@@ -79,12 +79,7 @@ function ReportCards({ reports, onDelete }) {
             </Typography>
           </Stack>
           <Box sx={{ mt: 1, ml: -1 }}>
-            <ReportActions
-              report={report}
-              variant="compact"
-              align="flex-start"
-              onDelete={onDelete}
-            />
+            <ReportActions report={report} align="flex-start" onDelete={onDelete} />
           </Box>
         </Box>
       ))}
@@ -142,7 +137,7 @@ function ReportRows({ reports, onDelete }) {
                 {formatDateTime(report.created_at)}
               </TableCell>
               <TableCell align="right">
-                <ReportActions report={report} variant="compact" onDelete={onDelete} />
+                <ReportActions report={report} onDelete={onDelete} />
               </TableCell>
             </TableRow>
           ))}

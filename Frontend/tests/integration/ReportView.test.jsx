@@ -1,6 +1,8 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import MainLayout from '@/components/layout/MainLayout';
+import { ROUTES } from '@/config/routes.config';
 import { reportService } from '@/features/reports/services/reportService';
 import ReportView from '@/pages/ReportView';
 import { ApiError } from '@/services/api/interceptors';
@@ -14,20 +16,22 @@ vi.mock('@/features/reports/services/reportService', async (importOriginal) => {
 });
 
 const renderView = (slug = 'acme-cloud-docs-demo01') =>
-  renderWithProviders(<ReportView />, { route: `/view/${slug}`, path: '/view/:slug' });
+  renderWithProviders(<ReportView />, {
+    route: `/r/${slug}`,
+    path: ROUTES.REPORT_VIEW,
+    layout: <MainLayout />,
+  });
 
 describe('Report view page (shareable link)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('shows report details, download buttons and the HTML view by default', async () => {
+  it('shows the download links and the HTML view by default', async () => {
     reportService.get.mockResolvedValue(sampleReportDetail);
     renderView();
 
-    expect(await screen.findByRole('heading', { name: 'Acme Cloud Docs' })).toBeInTheDocument();
-    expect(screen.getByText('5 pages analysed')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /download pdf/i })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: /download pdf/i })).toHaveAttribute(
       'href',
       '/api/reports/acme-cloud-docs-demo01/pdf?download=true',
     );
@@ -39,6 +43,8 @@ describe('Report view page (shareable link)', () => {
       'href',
       '/api/reports/acme-cloud-docs-demo01/pptx',
     );
+    expect(screen.getByRole('link', { name: 'Generate' })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'History' })).toHaveAttribute('href', '/reports');
     expect(screen.getByTitle('Acme Cloud Docs – HTML view')).toHaveAttribute(
       'src',
       '/api/reports/acme-cloud-docs-demo01/html',

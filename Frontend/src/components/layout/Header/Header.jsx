@@ -1,24 +1,21 @@
+import MenuIcon from '@mui/icons-material/Menu';
+import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import {
   AppBar,
   Box,
-  Button,
-  Container,
+  IconButton,
   Toolbar,
+  Tooltip,
   Typography,
   useScrollTrigger,
 } from '@mui/material';
-import { Link as RouterLink, NavLink } from 'react-router-dom';
 
 import { APP_CONFIG } from '@/config/app.config';
-import { ROUTES } from '@/config/routes.config';
 
-const NAV_ITEMS = [
-  { label: 'Generate', to: ROUTES.HOME, end: true },
-  { label: 'Reports', to: ROUTES.REPORTS, end: false },
-];
-
-function Header() {
+function Header({ sidebarOpen, onMenuClick, actionsOpen, onActionsToggle }) {
   const scrolled = useScrollTrigger({ disableHysteresis: true, threshold: 8 });
+  const toggleLabel = sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar';
+  const actionsLabel = actionsOpen ? 'Collapse report tools' : 'Expand report tools';
 
   return (
     <AppBar
@@ -33,70 +30,72 @@ function Header() {
         transition: 'box-shadow 0.3s ease',
       }}
     >
-      <Container maxWidth="lg">
-        <Toolbar disableGutters sx={{ gap: 2, minHeight: 'var(--header-height)' }}>
-          <Box
-            component={RouterLink}
-            to={ROUTES.HOME}
+      <Toolbar
+        sx={{
+          position: 'relative',
+          '&.MuiToolbar-root': { minHeight: 'calc(var(--header-height) - 1px)' },
+        }}
+      >
+        <Tooltip title={toggleLabel}>
+          <IconButton
+            edge="start"
+            onClick={onMenuClick}
+            aria-label={toggleLabel}
+            aria-expanded={sidebarOpen}
+            sx={{ color: 'text.secondary' }}
+          >
+            {sidebarOpen ? <MenuOpenIcon /> : <MenuIcon />}
+          </IconButton>
+        </Tooltip>
+        <Box
+          sx={{
+            position: 'absolute',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            textAlign: 'center',
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+          }}
+        >
+          <Typography
+            component="p"
+            color="primary"
+            sx={{ fontSize: { xs: 17, sm: 21 }, fontWeight: 700, lineHeight: 1.3 }}
+          >
+            {APP_CONFIG.APP_NAME}
+          </Typography>
+          <Typography
+            component="p"
             sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.5,
-              textDecoration: 'none',
-              '& img': { transition: 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)' },
-              '&:hover img': { transform: 'rotate(-8deg) scale(1.08)' },
+              mt: 0.25,
+              fontSize: { xs: 11, sm: 12 },
+              fontWeight: 600,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'text.secondary',
             }}
           >
-            <Box
-              component="img"
-              src={APP_CONFIG.LOGO_SRC}
-              alt={`${APP_CONFIG.BRAND_NAME} logo`}
-              sx={{ width: 36, height: 36 }}
-            />
-            <Typography
-              variant="subtitle1"
-              color="primary"
-              sx={{ fontWeight: 700, display: { xs: 'none', sm: 'block' } }}
+            {APP_CONFIG.BRAND_NAME}
+          </Typography>
+        </Box>
+        {onActionsToggle ? (
+          <Tooltip title={actionsLabel}>
+            <IconButton
+              edge="end"
+              onClick={onActionsToggle}
+              aria-label={actionsLabel}
+              aria-expanded={actionsOpen}
+              sx={{
+                ml: 'auto',
+                color: 'text.secondary',
+                display: { xs: 'none', md: 'inline-flex' },
+              }}
             >
-              {APP_CONFIG.APP_NAME}
-            </Typography>
-          </Box>
-
-          <Box component="nav" sx={{ ml: 'auto', display: 'flex', gap: { xs: 0, sm: 0.5 } }}>
-            {NAV_ITEMS.map((item) => (
-              <Button
-                key={item.to}
-                component={NavLink}
-                to={item.to}
-                end={item.end}
-                color="inherit"
-                sx={{
-                  position: 'relative',
-                  color: 'text.secondary',
-                  px: { xs: 1.5, sm: 2 },
-                  '&:hover': { transform: 'none', color: 'primary.main', bgcolor: 'transparent' },
-                  '&::after': {
-                    content: '""',
-                    position: 'absolute',
-                    left: 12,
-                    right: 12,
-                    bottom: 4,
-                    height: 2,
-                    borderRadius: 1,
-                    bgcolor: 'secondary.main',
-                    transform: 'scaleX(0)',
-                    transition: 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
-                  },
-                  '&:hover::after, &.active::after': { transform: 'scaleX(1)' },
-                  '&.active': { color: 'primary.main' },
-                }}
-              >
-                {item.label}
-              </Button>
-            ))}
-          </Box>
-        </Toolbar>
-      </Container>
+              {actionsOpen ? <MenuOpenIcon sx={{ transform: 'scaleX(-1)' }} /> : <MenuIcon />}
+            </IconButton>
+          </Tooltip>
+        ) : undefined}
+      </Toolbar>
     </AppBar>
   );
 }
