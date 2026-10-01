@@ -1,0 +1,166 @@
+{% macro text(b, content, size, cls="") -%}
+<div class="el text {{ cls }}" style="{{ box(b) }};font-size:calc(var(--pt)*{{ size }})">{{ content }}</div>
+{%- endmacro %}
+{% macro rect(b, cls) -%}
+<div class="el {{ cls }}" style="{{ box(b) }}"></div>
+{%- endmacro %}
+{% macro hline(y, cls="line") -%}
+<div class="el {{ cls }}" style="{{ box((S.MARGIN_X, y, S.CONTENT_WIDTH, 0)) }}"></div>
+{%- endmacro %}
+{% macro logo(b) -%}
+{% if logo_src %}<img class="el" src="{{ logo_src }}" alt="{{ deck.brand_name }} logo" style="{{ box(b) }}" />{% endif %}
+{%- endmacro %}
+{% macro page_heading(data) -%}
+<div class="el badge middle center" style="{{ box(L.PAGE_BADGE) }};font-size:calc(var(--pt)*18)">{{ "%02d" | format(data.position) }}</div>
+{{ text(L.PAGE_TITLE, data.title, 20, "bold primary middle nowrap") }}
+{{ text(L.PAGE_URL, data.url, 11, "muted middle nowrap") }}
+{{ rect(L.PAGE_RULE, "accent-fill") }}
+{%- endmacro %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ deck.site_name }} · Slides</title>
+    <style>
+      {% include "slides.css" %}
+    </style>
+  </head>
+  <body>
+    <main class="deck">
+      {% for slide in deck.slides %}
+      <section class="slide slide--{{ slide.kind }}" aria-label="Slide {{ slide.number }} of {{ deck.slides | length }}">
+        {% if slide.kind not in ("title", "closing") %}
+        {{ logo(L.HEADER_LOGO) }}
+        {{ text(L.HEADER_BRAND, deck.brand_name, 12, "bold primary middle") }}
+        {{ text(L.HEADER_SITE, deck.site_name, 11, "bold primary middle right nowrap") }}
+        {{ hline(L.HEADER_LINE_Y) }}
+        {{ hline(L.FOOTER_LINE_Y) }}
+        {{ text(L.FOOTER_TEXT, deck.site_name ~ "   ·   " ~ deck.report_title, 9, "muted middle pre") }}
+        {{ text(L.FOOTER_NUMBER, slide.number ~ " / " ~ (deck.slides | length), 9, "muted middle right") }}
+        {% endif %}
+
+        {% if slide.kind == "title" %}
+        {{ rect(L.TITLE_STRIP, "primary-fill") }}
+        {{ logo(L.TITLE_LOGO) }}
+        {{ text(L.TITLE_EYEBROW, deck.report_title | upper, 13, "bold accent eyebrow") }}
+        {{ text(L.TITLE_SITE, deck.site_name, 44, "bold primary") }}
+        {{ text(L.TITLE_URL, deck.source_url, 16, "muted") }}
+        {{ rect(L.TITLE_BAR, "accent-fill") }}
+        {{ text(L.TITLE_META, "Generated " ~ deck.generated_at ~ "   ·   " ~ deck.page_count ~ " page" ~ ("s" if deck.page_count != 1 else "") ~ " analysed", 13, "muted pre") }}
+        {{ text(L.TITLE_BRAND, deck.brand_name, 12, "bold primary") }}
+
+        {% elif slide.kind == "overview" %}
+        {{ text(L.SLIDE_TITLE, slide.title, 24, "bold primary middle") }}
+        {{ rect(L.SLIDE_TITLE_BAR, "accent-fill") }}
+        {% set metrics = [("Pages analysed", deck.page_count), ("Total words", "{:,}".format(deck.totals.words)), ("Total links", "{:,}".format(deck.totals.links)), ("Total images", "{:,}".format(deck.totals.images))] %}
+        {% for label, value in metrics %}
+        {% set x = S.MARGIN_X + loop.index0 * (L.METRIC_WIDTH + L.METRIC_GAP) %}
+        {{ rect((x, L.METRIC_TOP, L.METRIC_WIDTH, L.METRIC_HEIGHT), "card") }}
+        {{ rect((x + 0.08, L.METRIC_TOP, L.METRIC_WIDTH - 0.16, 0.05), "accent-fill") }}
+        {{ text((x + 0.25, L.METRIC_TOP + 0.27, L.METRIC_WIDTH - 0.4, 0.3), label | upper, 11, "muted label") }}
+        {{ text((x + 0.25, L.METRIC_TOP + 0.6, L.METRIC_WIDTH - 0.4, 0.55), value, 30, "bold primary") }}
+        {% endfor %}
+        {{ rect(L.DETAILS, "surface rounded") }}
+        {% set details = [("Website read on", deck.created_at), ("Report generated", deck.generated_at), ("Shareable link", deck.share_url)] %}
+        {% for label, value in details %}
+        {% set row_y = L.DETAILS[1] + L.DETAILS_ROW_TOP + loop.index0 * L.DETAILS_ROW_STEP %}
+        {{ text((L.DETAILS[0] + L.DETAILS_LABEL_X, row_y, 2.7, 0.32), label, 14, "bold muted") }}
+        {{ text((L.DETAILS[0] + L.DETAILS_VALUE_X, row_y, L.DETAILS[2] - L.DETAILS_VALUE_X - 0.3, 0.32), value, 14, "primary" if loop.last else "") }}
+        {% endfor %}
+
+        {% elif slide.kind == "summary" %}
+        {{ text(L.SLIDE_TITLE, slide.title, 24, "bold primary middle") }}
+        {{ rect(L.SLIDE_TITLE_BAR, "accent-fill") }}
+        <table class="el summary-table" style="left:calc(var(--in)*{{ S.MARGIN_X }});top:calc(var(--in)*{{ L.TABLE_TOP }});width:calc(var(--in)*{{ S.CONTENT_WIDTH }})">
+          <colgroup>
+            {% for width in L.TABLE_COLUMNS %}<col style="width:calc(var(--in)*{{ width }})" />{% endfor %}
+          </colgroup>
+          <thead>
+            <tr style="height:calc(var(--in)*{{ L.TABLE_HEADER_HEIGHT }})">
+              <th class="center">#</th><th>Page</th><th>Description</th>
+              <th class="right">Words</th><th class="right">Links</th><th class="right">Images</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in slide.data.rows %}
+            <tr style="height:calc(var(--in)*{{ L.TABLE_ROW_HEIGHT }})"{% if loop.index is even %} class="striped"{% endif %}>
+              <td class="center">{{ row.position }}</td>
+              <td><span class="cell-title">{{ row.title }}</span><span class="cell-url">{{ row.url }}</span></td>
+              <td class="cell-description">{{ row.description }}</td>
+              <td class="right">{{ "{:,}".format(row.words) }}</td>
+              <td class="right">{{ "{:,}".format(row.links) }}</td>
+              <td class="right">{{ "{:,}".format(row.images) }}</td>
+            </tr>
+            {% endfor %}
+            {% if slide.data.show_total %}
+            <tr class="total" style="height:calc(var(--in)*{{ L.TABLE_TOTAL_HEIGHT }})">
+              <td colspan="3">Total</td>
+              <td class="right">{{ "{:,}".format(deck.totals.words) }}</td>
+              <td class="right">{{ "{:,}".format(deck.totals.links) }}</td>
+              <td class="right">{{ "{:,}".format(deck.totals.images) }}</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+
+        {% elif slide.kind == "chart" %}
+        {{ text(L.SLIDE_TITLE, slide.title, 24, "bold primary middle") }}
+        {{ rect(L.SLIDE_TITLE_BAR, "accent-fill") }}
+        {{ text(L.CHART_CAPTION, slide.data.chart.caption, 13, "muted") }}
+        <img class="el" src="{{ slide.data.chart.data_uri }}" alt="{{ slide.title }} chart" style="{{ box(L.CHART_IMAGE) }}" />
+
+        {% elif slide.kind == "page" %}
+        {{ page_heading(slide.data) }}
+        {% for label, value in slide.data.stats %}
+        {% set x, width = L.STAT_COLUMNS[loop.index0] %}
+        {{ rect((x, L.STAT_TOP, width, L.STAT_HEIGHT), "surface-strong rounded") }}
+        {{ text((x + 0.2, L.STAT_TOP + 0.16, width - 0.3, 0.26), label | upper, 10, "bold muted label") }}
+        {{ text((x + 0.2, L.STAT_TOP + 0.45, width - 0.3, 0.38), value, 18, "bold primary nowrap") }}
+        {% endfor %}
+        {% if slide.data.chart %}
+        {{ text(L.BREAKDOWN_TITLE, slide.data.chart.title, 13, "bold primary") }}
+        <img class="el" src="{{ slide.data.chart.data_uri }}" alt="{{ slide.data.chart.title }} chart" style="{{ box(L.BREAKDOWN_IMAGE) }}" />
+        {% endif %}
+        {% if slide.data.meta or slide.data.meta_note %}
+        {{ text(L.META_TITLE, "Meta description", 13, "bold primary") }}
+        {{ text(L.META_TEXT, slide.data.meta or slide.data.meta_note, 11, "meta" if slide.data.meta else "meta muted italic") }}
+        {% endif %}
+
+        {% elif slide.kind == "page_content" %}
+        {{ page_heading(slide.data) }}
+        {% for section in slide.data.sections %}
+        {% set body_top = S.BODY_TOP + section.body_top %}
+        {{ text((S.MARGIN_X, S.BODY_TOP + section.top, S.CONTENT_WIDTH, 0.32), section.title, 13, "bold primary") }}
+        {% if section.kind == "headings" %}
+        {% if section.note %}
+        {{ text((S.MARGIN_X, body_top, S.CONTENT_WIDTH, S.HEADING_ROW_HEIGHT), section.note, 11.5, "muted italic middle") }}
+        {% endif %}
+        {% for heading in section["items"] %}
+        {% set row_y = body_top + loop.index0 * S.HEADING_ROW_HEIGHT %}
+        {% set indent = L.H2_INDENT if heading.level == 2 else 0 %}
+        <div class="el tag tag--h{{ heading.level }} middle center" style="{{ box((S.MARGIN_X + indent, row_y + (S.HEADING_ROW_HEIGHT - L.TAG_SIZE[1]) / 2, L.TAG_SIZE[0], L.TAG_SIZE[1])) }};font-size:calc(var(--pt)*8)">H{{ heading.level }}</div>
+        {% set text_x = S.MARGIN_X + indent + L.HEADING_TEXT_OFFSET %}
+        {{ text((text_x, row_y, L.RIGHT_EDGE - text_x, S.HEADING_ROW_HEIGHT), heading.text, 11.5, "middle nowrap") }}
+        {{ hline(row_y + S.HEADING_ROW_HEIGHT, "line dashed") }}
+        {% endfor %}
+        {% else %}
+        {{ rect((S.MARGIN_X, body_top, S.CONTENT_WIDTH, section.body_height), "surface") }}
+        {{ rect((S.MARGIN_X, body_top, L.TEXT_BAR_WIDTH, section.body_height), "accent-fill") }}
+        {{ text((S.MARGIN_X + L.TEXT_INSET_X, body_top + S.TEXT_BOX_PADDING, S.CONTENT_WIDTH - 2 * L.TEXT_INSET_X, section.body_height - 2 * S.TEXT_BOX_PADDING), section.text, 12, "body-text") }}
+        {% endif %}
+        {% endfor %}
+
+        {% elif slide.kind == "closing" %}
+        {{ logo(L.CLOSING_LOGO) }}
+        {{ text(L.CLOSING_TITLE, "Thank you", 40, "bold primary center") }}
+        {{ rect(L.CLOSING_BAR, "accent-fill") }}
+        {{ text(L.CLOSING_LEAD, "View the full report online", 14, "muted center") }}
+        <a class="el text bold primary center" href="{{ deck.share_url }}" style="{{ box(L.CLOSING_LINK) }};font-size:calc(var(--pt)*15)">{{ deck.share_url }}</a>
+        {{ text(L.CLOSING_NOTE, deck.brand_name ~ "   ·   Generated " ~ deck.generated_at, 11, "muted center pre") }}
+        {% endif %}
+      </section>
+      {% endfor %}
+    </main>
+  </body>
+</html>

@@ -23,4 +23,8 @@ export const reportService = {
     `${buildApiUrl(ENDPOINTS.REPORT_PDF(slug))}${download ? '?download=true' : ''}`,
 
   docxUrl: (slug) => buildApiUrl(ENDPOINTS.REPORT_DOCX(slug)),
+
+  slidesUrl: (slug) => buildApiUrl(ENDPOINTS.REPORT_SLIDES(slug)),
+
+  pptxUrl: (slug) => buildApiUrl(ENDPOINTS.REPORT_PPTX(slug)),
 };

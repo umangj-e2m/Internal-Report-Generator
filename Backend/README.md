@@ -2,7 +2,7 @@
 
 FastAPI service that reads a website (the entered URL plus up to 4 internal links), stores the extracted
 content in PostgreSQL and serves it as an HTML view, a PDF (fixed logo header, page-numbered footer)
-and a DOCX with the same layout.
+a DOCX with the same layout, and a 16:9 slide deck (PPTX download plus an in-browser slide view).
 
 ## Requirements
 
@@ -48,6 +48,8 @@ auto-reload on http://127.0.0.1:8000. Host, port and reload come from `APP_HOST`
 | GET | `/api/reports/{slug}/html` | Report as a web page |
 | GET | `/api/reports/{slug}/pdf` | PDF shown inline; add `?download=true` to download |
 | GET | `/api/reports/{slug}/docx` | DOCX download |
+| GET | `/api/reports/{slug}/slides` | Slide deck as a web page (same slides as the PPTX) |
+| GET | `/api/reports/{slug}/pptx` | PPTX download |
 | DELETE | `/api/reports/{slug}` | Delete a report |
 
 A website that cannot be read returns `422` with a readable `detail` message; an unknown slug returns `404`.
@@ -62,7 +64,7 @@ A website that cannot be read returns `422` with a readable `detail` message; an
 | `routes/` | Thin HTTP layer (`health.py`, `reports.py`) |
 | `services/scraper/` | Fetching pages, following internal links, extracting content |
 | `services/reports/` | Creating, listing, fetching and deleting reports |
-| `services/exports/` | HTML (Jinja2 template), PDF (Playwright/Chromium) and DOCX (python-docx) builders |
+| `services/exports/` | HTML (Jinja2 template), PDF (Playwright/Chromium), DOCX (python-docx) and PPTX (python-pptx) builders; charts (matplotlib); `slides.py` builds the slide deck shared by the PPTX and the HTML slide view |
 | `models/db/` | SQLAlchemy tables · `models/schemas/` API schemas · `models/domain/` scraper data classes |
 | `utils/` | Generic helpers (dates, slugs, strings) |
 | `log_config/` | Logging setup (the SOP's `logging/` folder, renamed so it does not shadow Python's `logging` module) |

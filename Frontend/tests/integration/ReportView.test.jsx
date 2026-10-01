@@ -35,6 +35,10 @@ describe('Report view page (shareable link)', () => {
       'href',
       '/api/reports/acme-cloud-docs-demo01/docx',
     );
+    expect(screen.getByRole('link', { name: /download ppt/i })).toHaveAttribute(
+      'href',
+      '/api/reports/acme-cloud-docs-demo01/pptx',
+    );
     expect(screen.getByTitle('Acme Cloud Docs – HTML view')).toHaveAttribute(
       'src',
       '/api/reports/acme-cloud-docs-demo01/html',
@@ -51,6 +55,19 @@ describe('Report view page (shareable link)', () => {
     expect(screen.getByTitle('Acme Cloud Docs – PDF view')).toHaveAttribute(
       'src',
       '/api/reports/acme-cloud-docs-demo01/pdf',
+    );
+  });
+
+  it('switches the viewer to the slides', async () => {
+    reportService.get.mockResolvedValue(sampleReportDetail);
+    const user = userEvent.setup();
+    renderView();
+
+    await user.click(await screen.findByRole('tab', { name: /slides/i }));
+
+    expect(screen.getByTitle('Acme Cloud Docs – Slides')).toHaveAttribute(
+      'src',
+      '/api/reports/acme-cloud-docs-demo01/slides',
     );
   });
 

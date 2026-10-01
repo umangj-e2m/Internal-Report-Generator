@@ -42,6 +42,10 @@ describe('Reports page', () => {
       'href',
       '/api/reports/acme-cloud-docs-demo01/docx',
     );
+    expect(within(row).getByLabelText('Download PPT')).toHaveAttribute(
+      'href',
+      '/api/reports/acme-cloud-docs-demo01/pptx',
+    );
   });
 
   it('shows an empty state when there are no reports', async () => {

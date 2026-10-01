@@ -4,7 +4,9 @@ from typing import Literal
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from models.db import Report
-from services.exports.helpers import build_context
+from services.exports import slide_layout
+from services.exports import slides as slide_model
+from services.exports.helpers import build_context, logo_data_uri
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 
@@ -21,3 +23,19 @@ RenderMode = Literal["web", "print"]
 def render_report_html(report: Report, mode: RenderMode = "web") -> str:
     """`web` includes an in-page header/footer; `print` leaves them to the PDF renderer."""
     return _env.get_template("report.html").render(**build_context(report), mode=mode)
+
+
+def render_slides_html(report: Report) -> str:
+    return _env.get_template("slides.html").render(
+        deck=slide_model.build_deck(report, "svg"),
+        L=slide_layout,
+        S=slide_model,
+        logo_src=logo_data_uri(),
+        box=_box,
+    )
+
+
+def _box(box: tuple[float, float, float, float]) -> str:
+    x, y, width, height = box
+    return (f"left:calc(var(--in)*{x:.4f});top:calc(var(--in)*{y:.4f});"
+            f"width:calc(var(--in)*{width:.4f});height:calc(var(--in)*{height:.4f})")

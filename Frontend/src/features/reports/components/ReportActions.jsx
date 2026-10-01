@@ -3,6 +3,7 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import LinkIcon from '@mui/icons-material/Link';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
+import SlideshowOutlinedIcon from '@mui/icons-material/SlideshowOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import { Box, Button, IconButton, Stack, Tooltip } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
@@ -20,6 +21,7 @@ function ReportActions({ report, variant = 'full', align = 'flex-end', onDelete 
   const copy = useCopyToClipboard();
   const pdfDownloadUrl = reportService.pdfUrl(report.slug, { download: true });
   const docxUrl = reportService.docxUrl(report.slug);
+  const pptxUrl = reportService.pptxUrl(report.slug);
   const handleCopy = () => copy(report.share_url);
 
   if (variant === 'compact') {
@@ -55,6 +57,16 @@ function ReportActions({ report, variant = 'full', align = 'flex-end', onDelete 
             <DescriptionOutlinedIcon fontSize="small" />
           </IconButton>
         </Tooltip>
+        <Tooltip title="Download PPT">
+          <IconButton
+            component="a"
+            href={pptxUrl}
+            aria-label="Download PPT"
+            sx={hoverTint('#C43E1C', 'rgba(196, 62, 28, 0.08)')}
+          >
+            <SlideshowOutlinedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
         <Tooltip title="Copy shareable link">
           <IconButton
             onClick={handleCopy}
@@ -82,7 +94,7 @@ function ReportActions({ report, variant = 'full', align = 'flex-end', onDelete 
         gap: 1,
         flexShrink: 0,
         width: { xs: '100%', md: 'auto' },
-        gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(4, auto)' },
+        gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(3, auto)', lg: 'repeat(5, auto)' },
         '& .MuiButton-root': { whiteSpace: 'nowrap' },
       }}
     >
@@ -96,6 +108,9 @@ function ReportActions({ report, variant = 'full', align = 'flex-end', onDelete 
       </Button>
       <Button variant="outlined" href={docxUrl} startIcon={<DescriptionOutlinedIcon />}>
         Download DOCX
+      </Button>
+      <Button variant="outlined" href={pptxUrl} startIcon={<SlideshowOutlinedIcon />}>
+        Download PPT
       </Button>
       <Button variant="outlined" onClick={handleCopy} startIcon={<LinkIcon />}>
         Copy link

@@ -8,6 +8,8 @@ export const ENDPOINTS = {
   REPORT_HTML: (slug) => `${reportBase(slug)}/html`,
   REPORT_PDF: (slug) => `${reportBase(slug)}/pdf`,
   REPORT_DOCX: (slug) => `${reportBase(slug)}/docx`,
+  REPORT_SLIDES: (slug) => `${reportBase(slug)}/slides`,
+  REPORT_PPTX: (slug) => `${reportBase(slug)}/pptx`,
 };
 
 /** Absolute-from-root URL for links and iframes that bypass axios. */

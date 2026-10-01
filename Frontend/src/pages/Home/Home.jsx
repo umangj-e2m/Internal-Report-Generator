@@ -100,7 +100,7 @@ function Home() {
             sx={{ fontSize: { xs: '1rem', md: '1.1rem' }, ...fadeInUp(160) }}
           >
             Paste a URL and get the title, description, headings and a content summary for up to
-            five pages, as a branded PDF, a Word document and a shareable web page.
+            five pages, as a branded PDF, a Word document, a slide deck and a shareable web page.
           </Typography>
         </Box>
       </Box>

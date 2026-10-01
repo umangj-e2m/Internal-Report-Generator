@@ -6,12 +6,13 @@ from db import get_db
 from models.schemas.requests import CreateReportRequest
 from models.schemas.responses import ReportDetailOut, ReportListOut
 from services.exports.docx_export import render_report_docx
-from services.exports.html_export import render_report_html
+from services.exports.html_export import render_report_html, render_slides_html
 from services.exports.pdf_export import render_report_pdf
+from services.exports.pptx_export import render_report_pptx
 from services.reports import service as report_service
 from services.reports.helpers import to_detail, to_summary
 from services.scraper.service import WebsiteScraper, get_scraper
-from services.shared.constants import DOCX_MEDIA_TYPE, PDF_MEDIA_TYPE
+from services.shared.constants import DOCX_MEDIA_TYPE, PDF_MEDIA_TYPE, PPTX_MEDIA_TYPE
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -58,6 +59,18 @@ def get_report_pdf(slug: str, download: bool = False, db: Session = Depends(get_
 def get_report_docx(slug: str, db: Session = Depends(get_db)) -> Response:
     report = report_service.get_report(db, slug)
     return _file_response(render_report_docx(report), DOCX_MEDIA_TYPE, f"{slug}.docx", download=True)
+
+
+@router.get("/{slug}/slides", response_class=HTMLResponse)
+def get_report_slides(slug: str, db: Session = Depends(get_db)) -> HTMLResponse:
+    report = report_service.get_report(db, slug)
+    return HTMLResponse(render_slides_html(report))
+
+
+@router.get("/{slug}/pptx")
+def get_report_pptx(slug: str, db: Session = Depends(get_db)) -> Response:
+    report = report_service.get_report(db, slug)
+    return _file_response(render_report_pptx(report), PPTX_MEDIA_TYPE, f"{slug}.pptx", download=True)
 
 
 @router.delete("/{slug}", status_code=status.HTTP_204_NO_CONTENT)

@@ -62,7 +62,7 @@ def test_get_report_by_slug(client):
     assert response.json()["pages"] == created["pages"]
 
 
-@pytest.mark.parametrize("suffix", ["", "/html", "/pdf", "/docx"])
+@pytest.mark.parametrize("suffix", ["", "/html", "/pdf", "/docx", "/slides", "/pptx"])
 def test_unknown_slug_returns_404(client, suffix):
     response = client.get(f"/api/reports/does-not-exist{suffix}")
 

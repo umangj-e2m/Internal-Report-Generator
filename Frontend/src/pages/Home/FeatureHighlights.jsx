@@ -2,6 +2,7 @@ import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import LinkIcon from '@mui/icons-material/Link';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
+import SlideshowOutlinedIcon from '@mui/icons-material/SlideshowOutlined';
 import { Box, Grid, Paper, Typography } from '@mui/material';
 
 import { fadeInUp, hoverLift, STAGGER_MS } from '@/styles/animations';
@@ -16,6 +17,11 @@ const FEATURES = [
     icon: <DescriptionOutlinedIcon />,
     title: 'Editable DOCX',
     text: 'The same layout as a Word document, ready for edits and comments.',
+  },
+  {
+    icon: <SlideshowOutlinedIcon />,
+    title: 'PPT slides',
+    text: 'A 16:9 slide deck with charts, to present in the app or download.',
   },
   {
     icon: <ArticleOutlinedIcon />,
@@ -33,7 +39,7 @@ function FeatureHighlights() {
   return (
     <Grid container spacing={2} component="section" aria-label="Report formats">
       {FEATURES.map((feature, index) => (
-        <Grid key={feature.title} size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid key={feature.title} size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
           <Paper
             variant="outlined"
             sx={{

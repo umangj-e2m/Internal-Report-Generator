@@ -2,6 +2,7 @@ REPORT_TITLE = "Website Content Report"
 
 PDF_MEDIA_TYPE = "application/pdf"
 DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+PPTX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 
 BRAND_PRIMARY_HEX = "1B2340"
 BRAND_ACCENT_HEX = "F26B21"

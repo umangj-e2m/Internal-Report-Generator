@@ -1,6 +1,7 @@
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
+import SlideshowOutlinedIcon from '@mui/icons-material/SlideshowOutlined';
 import { Box, Button, CircularProgress, Paper, Stack, Tab, Tabs } from '@mui/material';
 import { useState } from 'react';
 
@@ -11,6 +12,7 @@ import { reportService } from '../services/reportService';
 const VIEWS = {
   html: { label: 'HTML view', icon: <ArticleOutlinedIcon />, src: reportService.htmlUrl },
   pdf: { label: 'PDF view', icon: <PictureAsPdfOutlinedIcon />, src: reportService.pdfUrl },
+  slides: { label: 'Slides', icon: <SlideshowOutlinedIcon />, src: reportService.slidesUrl },
 };
 
 function ReportViewer({ slug, title }) {
