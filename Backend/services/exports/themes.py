@@ -40,6 +40,9 @@ PALETTES = {
         Palette("classic", "Classic", BRAND_PRIMARY_HEX, BRAND_ACCENT_HEX),
         Palette("ocean", "Ocean", "0C3B5E", "0E9F9A"),
         Palette("berry", "Berry", "3D1E4F", "D9467A"),
+        Palette("forest", "Forest", "1F4D3A", "D99A1E"),
+        Palette("royal", "Royal", "1E3A8A", "F59E0B"),
+        Palette("charcoal", "Charcoal", "2D3142", "E63946"),
     )
 }
 
@@ -52,6 +55,24 @@ FONTS = {
                    "Georgia, 'Times New Roman', Times, serif"),
         FontChoice("calibri", "Calibri", "Calibri",
                    "Calibri, Carlito, 'Segoe UI', Arial, sans-serif"),
+        FontChoice("arial", "Arial", "Arial",
+                   "Arial, 'Helvetica Neue', Helvetica, sans-serif"),
+        FontChoice("cambria", "Cambria", "Cambria",
+                   "Cambria, Caladea, Georgia, serif"),
+        FontChoice("trebuchet", "Trebuchet MS", "Trebuchet MS",
+                   "'Trebuchet MS', 'Segoe UI', Arial, sans-serif"),
+        FontChoice("verdana", "Verdana", "Verdana",
+                   "Verdana, Geneva, 'DejaVu Sans', sans-serif"),
+        FontChoice("tahoma", "Tahoma", "Tahoma",
+                   "Tahoma, Verdana, 'Segoe UI', sans-serif"),
+        FontChoice("candara", "Candara", "Candara",
+                   "Candara, Calibri, 'Segoe UI', sans-serif"),
+        FontChoice("times", "Times New Roman", "Times New Roman",
+                   "'Times New Roman', Times, serif"),
+        FontChoice("palatino", "Palatino", "Palatino Linotype",
+                   "'Palatino Linotype', Palatino, 'Book Antiqua', serif"),
+        FontChoice("constantia", "Constantia", "Constantia",
+                   "Constantia, Cambria, Georgia, serif"),
     )
 }
 

@@ -67,6 +67,7 @@ class StyleOptionsOut(BaseModel):
     palettes: list[PaletteOut]
     fonts: list[FontOut]
     sizes: list[SizeOut]
+    defaults: ReportStyleOut
 
 
 class ReportListOut(BaseModel):

@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import MainLayout from '@/components/layout/MainLayout';
@@ -21,6 +21,10 @@ vi.mock('@/features/reports/services/reportService', async (importOriginal) => {
     },
   };
 });
+
+vi.mock('@/features/reports/components/PdfPreview', () => ({
+  default: ({ file, title }) => <div role="document" aria-label={title} data-file={file} />,
+}));
 
 const DEFAULT_VERSION = 'v=classic-segoe-medium';
 
@@ -61,16 +65,25 @@ describe('Report view page (shareable link)', () => {
     );
   });
 
+  it('copies the full HTML view link', async () => {
+    const user = userEvent.setup();
+    renderView();
+
+    await user.click(await screen.findByRole('button', { name: /copy link/i }));
+
+    expect(await navigator.clipboard.readText()).toBe(sampleReportDetail.share_url);
+    expect(await screen.findByText('HTML view link copied to clipboard')).toBeInTheDocument();
+  });
+
   it('switches the viewer to the inline PDF', async () => {
     const user = userEvent.setup();
     renderView();
 
     await user.click(await screen.findByRole('tab', { name: /pdf view/i }));
 
-    expect(screen.getByTitle('Acme Cloud Docs – PDF view')).toHaveAttribute(
-      'src',
-      `/api/reports/acme-cloud-docs-demo01/pdf?${DEFAULT_VERSION}`,
-    );
+    expect(
+      await screen.findByRole('document', { name: 'Acme Cloud Docs – PDF view' }),
+    ).toHaveAttribute('data-file', `/api/reports/acme-cloud-docs-demo01/pdf?${DEFAULT_VERSION}`);
   });
 
   it('switches the viewer to the slides', async () => {
@@ -85,24 +98,20 @@ describe('Report view page (shareable link)', () => {
     );
   });
 
-  it('shows the current style with three palettes, fonts and sizes', async () => {
+  it('shows every palette, font and size with the current style selected', async () => {
     renderView();
 
     expect(await screen.findByRole('button', { name: 'Classic palette' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
-    expect(screen.getByRole('button', { name: 'Ocean palette' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
-    expect(screen.getByRole('button', { name: 'Berry palette' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /segoe ui/i })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    expect(screen.getByRole('button', { name: /georgia/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /calibri/i })).toBeInTheDocument();
+    for (const palette of sampleStyleOptions.palettes.slice(1)) {
+      expect(screen.getByRole('button', { name: `${palette.label} palette` })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
+    }
+    expect(screen.getByRole('combobox', { name: 'Font style' })).toHaveTextContent('Segoe UI');
     expect(screen.getByRole('button', { name: 'Medium' })).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -122,6 +131,49 @@ describe('Report view page (shareable link)', () => {
     expect(screen.getByRole('button', { name: 'Ocean palette' })).toHaveAttribute(
       'aria-pressed',
       'true',
+    );
+  });
+
+  it('lists every font in the dropdown and saves the chosen one', async () => {
+    const nextStyle = { palette: 'classic', font_family: 'times', font_size: 'medium' };
+    reportService.updateStyle.mockResolvedValue({ ...sampleReportDetail, style: nextStyle });
+    const user = userEvent.setup();
+    renderView();
+
+    await user.click(await screen.findByRole('combobox', { name: 'Font style' }));
+    const options = screen.getAllByRole('option');
+    expect(options.map((option) => option.textContent)).toEqual(
+      sampleStyleOptions.fonts.map((font) => `Aa${font.label}`),
+    );
+    await user.click(screen.getByRole('option', { name: /times new roman/i }));
+
+    expect(reportService.updateStyle).toHaveBeenCalledWith('acme-cloud-docs-demo01', nextStyle);
+    expect(await screen.findByRole('combobox', { name: 'Font style' })).toHaveTextContent(
+      'Times New Roman',
+    );
+  });
+
+  it('disables reset while the report already uses the default style', async () => {
+    renderView();
+
+    expect(await screen.findByRole('button', { name: /reset to default/i })).toBeDisabled();
+  });
+
+  it('resets a custom style to the default', async () => {
+    const customStyle = { palette: 'royal', font_family: 'times', font_size: 'large' };
+    reportService.get.mockResolvedValue({ ...sampleReportDetail, style: customStyle });
+    reportService.updateStyle.mockResolvedValue(sampleReportDetail);
+    const user = userEvent.setup();
+    renderView();
+
+    await user.click(await screen.findByRole('button', { name: /reset to default/i }));
+
+    expect(reportService.updateStyle).toHaveBeenCalledWith(
+      'acme-cloud-docs-demo01',
+      sampleStyleOptions.defaults,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /reset to default/i })).toBeDisabled(),
     );
   });
 

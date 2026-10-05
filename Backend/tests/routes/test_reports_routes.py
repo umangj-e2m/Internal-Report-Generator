@@ -17,7 +17,7 @@ def test_create_report_returns_pages_slug_and_share_url(client):
     assert report["site_name"] == "Example Co"
     assert report["page_count"] == 5
     assert report["slug"].startswith("example-co-")
-    assert report["share_url"] == f"http://frontend.test/r/{report['slug']}"
+    assert report["share_url"] == f"http://frontend.test/api/reports/{report['slug']}/html"
     assert [page["position"] for page in report["pages"]] == [1, 2, 3, 4, 5]
     assert report["pages"][0]["headings"][0] == {"level": 1, "text": "Welcome to Example Co"}
 
@@ -70,15 +70,21 @@ def test_unknown_slug_returns_404(client, suffix):
     assert response.json()["detail"] == "Report 'does-not-exist' was not found."
 
 
-def test_style_options_list_three_of_each_choice(client):
+def test_style_options_list_palettes_fonts_and_sizes(client):
     response = client.get("/api/reports/style-options")
 
     assert response.status_code == 200
     options = response.json()
-    assert [item["key"] for item in options["palettes"]] == ["classic", "ocean", "berry"]
-    assert [item["key"] for item in options["fonts"]] == ["segoe", "georgia", "calibri"]
+    assert [item["key"] for item in options["palettes"]] == [
+        "classic", "ocean", "berry", "forest", "royal", "charcoal",
+    ]
+    assert [item["key"] for item in options["fonts"]] == [
+        "segoe", "georgia", "calibri", "arial", "cambria", "trebuchet",
+        "verdana", "tahoma", "candara", "times", "palatino", "constantia",
+    ]
     assert [item["key"] for item in options["sizes"]] == ["small", "medium", "large"]
     assert set(options["palettes"][0]) == {"key", "label", "primary", "accent"}
+    assert options["defaults"] == {"palette": "classic", "font_family": "segoe", "font_size": "medium"}
 
 
 def test_new_report_uses_the_default_style(client):

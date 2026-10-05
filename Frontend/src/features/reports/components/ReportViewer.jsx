@@ -3,12 +3,14 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import SlideshowOutlinedIcon from '@mui/icons-material/SlideshowOutlined';
 import { Box, Button, CircularProgress, Paper, Stack, Tab, Tabs } from '@mui/material';
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 
 import { fadeInUp } from '@/styles/animations';
 
 import { useReport } from '../hooks/useReport';
 import { reportService } from '../services/reportService';
+
+const PdfPreview = lazy(() => import('./PdfPreview'));
 
 const VIEWS = {
   html: { label: 'HTML view', icon: <ArticleOutlinedIcon />, src: reportService.htmlUrl },
@@ -27,8 +29,15 @@ function ReportViewer({ slug, title }) {
   const src = version ? `${VIEWS[view].src(slug)}?v=${version}` : VIEWS[view].src(slug);
   const frame = `${view}:${version}`;
   const isLoading = loadedFrame !== frame;
+  const frameTitle = `${title} – ${VIEWS[view].label}`;
+  const revealSx = {
+    opacity: isLoading ? 0 : 1,
+    transform: isLoading ? 'translateY(8px)' : 'none',
+    transition: 'opacity 0.45s ease, transform 0.45s ease',
+  };
 
   const handleChange = (_, nextView) => setView(nextView);
+  const handleLoad = () => setLoadedFrame(frame);
 
   return (
     <Paper variant="outlined" sx={{ overflow: 'hidden', ...fadeInUp(120) }}>
@@ -96,22 +105,26 @@ function ReportViewer({ slug, title }) {
             <CircularProgress color="secondary" />
           </Box>
         ) : undefined}
-        <Box
-          component="iframe"
-          key={frame}
-          src={src}
-          title={`${title} – ${VIEWS[view].label}`}
-          onLoad={() => setLoadedFrame(frame)}
-          sx={{
-            display: 'block',
-            width: '100%',
-            height: '100%',
-            border: 0,
-            opacity: isLoading ? 0 : 1,
-            transform: isLoading ? 'translateY(8px)' : 'none',
-            transition: 'opacity 0.45s ease, transform 0.45s ease',
-          }}
-        />
+        {view === 'pdf' ? (
+          <Suspense fallback={null}>
+            <PdfPreview
+              key={frame}
+              file={src}
+              title={frameTitle}
+              onLoad={handleLoad}
+              sx={revealSx}
+            />
+          </Suspense>
+        ) : (
+          <Box
+            component="iframe"
+            key={frame}
+            src={src}
+            title={frameTitle}
+            onLoad={handleLoad}
+            sx={{ display: 'block', width: '100%', height: '100%', border: 0, ...revealSx }}
+          />
+        )}
       </Box>
     </Paper>
   );

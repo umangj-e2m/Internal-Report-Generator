@@ -1,6 +1,16 @@
 import CheckIcon from '@mui/icons-material/Check';
 import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
-import { Box, ButtonBase, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import {
+  Box,
+  Button,
+  ButtonBase,
+  MenuItem,
+  Select,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+} from '@mui/material';
 import { useContext } from 'react';
 
 import { SidebarContext, SidebarItem, SidebarSection } from '@/components/layout/Sidebar';
@@ -22,11 +32,29 @@ const toggleSx = {
   },
 };
 
-function Field({ label, children }) {
+function Field({ label, id, children }) {
   return (
     <Box sx={{ mb: 2 }}>
-      <Typography sx={fieldLabelSx}>{label}</Typography>
+      <Typography id={id} sx={fieldLabelSx}>
+        {label}
+      </Typography>
       {children}
+    </Box>
+  );
+}
+
+function FontOption({ font }) {
+  return (
+    <Box
+      component="span"
+      sx={{ display: 'flex', alignItems: 'center', gap: 1.25, fontFamily: font.css_stack }}
+    >
+      <Box component="span" aria-hidden sx={{ fontSize: 18, lineHeight: 1, width: 26 }}>
+        Aa
+      </Box>
+      <Box component="span" sx={{ fontSize: 14 }}>
+        {font.label}
+      </Box>
     </Box>
   );
 }
@@ -99,12 +127,35 @@ function ReportAppearanceSection({ report }) {
       { ...style, ...patch },
       { onError: () => notify('Could not update the report style. Please try again.', 'error') },
     );
-  const pick = (key) => (_, value) => {
-    if (value) change({ [key]: value });
-  };
+  const fontsByKey = Object.fromEntries(options.fonts.map((font) => [font.key, font]));
+  const isDefault = Object.entries(options.defaults).every(([key, value]) => style[key] === value);
 
   return (
-    <SidebarSection title="Appearance">
+    <SidebarSection
+      title="Appearance"
+      action={
+        <Button
+          size="small"
+          color="secondary"
+          startIcon={<RestartAltIcon sx={{ fontSize: '16px !important' }} />}
+          onClick={() => change(options.defaults)}
+          disabled={isDefault}
+          aria-label="Reset to default"
+          sx={{
+            minWidth: 0,
+            px: 1,
+            py: 0.25,
+            borderRadius: 1.5,
+            fontSize: 12,
+            fontWeight: 600,
+            lineHeight: 1.5,
+            '& .MuiButton-startIcon': { mr: 0.5 },
+          }}
+        >
+          Reset
+        </Button>
+      }
+    >
       <Box sx={{ px: 1.5, pt: 0.5 }}>
         <Field label="Colour palette">
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0.5 }}>
@@ -119,36 +170,23 @@ function ReportAppearanceSection({ report }) {
           </Box>
         </Field>
 
-        <Field label="Font style">
-          <ToggleButtonGroup
-            exclusive
+        <Field label="Font style" id="report-font-label">
+          <Select
             fullWidth
-            orientation="vertical"
             size="small"
             value={style.font_family}
-            onChange={pick('font_family')}
-            aria-label="Font style"
+            onChange={(event) => change({ font_family: event.target.value })}
+            labelId="report-font-label"
+            renderValue={(key) => <FontOption font={fontsByKey[key]} />}
+            MenuProps={{ slotProps: { paper: { sx: { maxHeight: 360 } } } }}
+            sx={{ borderRadius: 2, '& .MuiSelect-select': { py: 1 } }}
           >
             {options.fonts.map((font) => (
-              <ToggleButton
-                key={font.key}
-                value={font.key}
-                sx={{
-                  ...toggleSx,
-                  justifyContent: 'flex-start',
-                  gap: 1.25,
-                  fontFamily: font.css_stack,
-                }}
-              >
-                <Box component="span" aria-hidden sx={{ fontSize: 18, lineHeight: 1, width: 26 }}>
-                  Aa
-                </Box>
-                <Box component="span" sx={{ fontSize: 14 }}>
-                  {font.label}
-                </Box>
-              </ToggleButton>
+              <MenuItem key={font.key} value={font.key} sx={{ py: 1 }}>
+                <FontOption font={font} />
+              </MenuItem>
             ))}
-          </ToggleButtonGroup>
+          </Select>
         </Field>
 
         <Field label="Text size">
@@ -157,7 +195,7 @@ function ReportAppearanceSection({ report }) {
             fullWidth
             size="small"
             value={style.font_size}
-            onChange={pick('font_size')}
+            onChange={(_, size) => size && change({ font_size: size })}
             aria-label="Text size"
           >
             {options.sizes.map((size) => (

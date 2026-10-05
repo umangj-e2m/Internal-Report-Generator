@@ -37,7 +37,9 @@ def to_page_row(position: int, page: ScrapedPage) -> ReportPage:
 
 
 def share_url(slug: str) -> str:
-    return f"{get_settings().public_base_url.rstrip('/')}/r/{slug}"
+    """Public link to the report's standalone HTML view."""
+    settings = get_settings()
+    return f"{settings.public_base_url.rstrip('/')}{settings.api_prefix}/reports/{slug}/html"
 
 
 def to_summary(report: Report) -> ReportSummaryOut:

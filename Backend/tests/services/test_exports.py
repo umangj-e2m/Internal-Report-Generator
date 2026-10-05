@@ -19,7 +19,12 @@ def test_web_html_contains_header_summary_table_and_page_sections(sample_report)
     assert "https://sample.test/pricing" in html
     assert "1,500" in html  # total words in the summary table
     assert "This page does not provide a meta description." in html
-    assert "http://frontend.test/r/sample-site-abc123" in html
+    assert "http://frontend.test/api/reports/sample-site-abc123/html" in html
+
+
+def test_html_and_slides_open_links_in_a_new_tab(sample_report):
+    for html in (render_report_html(sample_report), render_slides_html(sample_report)):
+        assert '<base target="_blank" />' in html
 
 
 def test_html_escapes_scraped_content(sample_report):

@@ -1,6 +1,5 @@
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import LinkIcon from '@mui/icons-material/Link';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import SlideshowOutlinedIcon from '@mui/icons-material/SlideshowOutlined';
 
@@ -42,13 +41,7 @@ function ReportSidebarSection({ slug }) {
         <SidebarItem
           icon={<LinkIcon fontSize="small" />}
           label="Copy link"
-          onClick={() => copy(report.share_url)}
-        />
-        <SidebarItem
-          icon={<OpenInNewIcon fontSize="small" />}
-          label="Open HTML"
-          href={reportService.htmlUrl(report.slug)}
-          external
+          onClick={() => copy(report.share_url, 'HTML view link copied to clipboard')}
         />
       </SidebarSection>
     </>

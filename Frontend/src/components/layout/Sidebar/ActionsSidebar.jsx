@@ -4,7 +4,7 @@ import { drawerSx } from './sidebarStyles';
 import { SidebarContext } from './SidebarSection';
 
 function ActionsSidebar({ open, title, icon, onExpand, children }) {
-  const width = open ? 'var(--sidebar-width)' : 'var(--sidebar-mini-width)';
+  const width = open ? 'var(--actions-sidebar-width)' : 'var(--sidebar-mini-width)';
 
   return (
     <Drawer variant="permanent" anchor="right" open sx={drawerSx(width, 'borderLeft')}>

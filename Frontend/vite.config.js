@@ -29,6 +29,7 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (!id.includes('node_modules')) return undefined;
+            if (id.includes('pdfjs-dist') || id.includes('react-pdf')) return 'pdf';
             if (id.includes('@mui') || id.includes('@emotion')) return 'mui';
             if (id.includes('react-router') || id.includes('react-dom') || id.includes('/react/')) {
               return 'react';

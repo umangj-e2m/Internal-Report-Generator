@@ -44,7 +44,7 @@ auto-reload on http://127.0.0.1:8000. Host, port and reload come from `APP_HOST`
 | GET | `/api/health` | API and database status |
 | POST | `/api/reports` | Body `{"url": "https://example.com"}`: read the site and create a report |
 | GET | `/api/reports?page=1&page_size=10&search=` | Paginated list, newest first |
-| GET | `/api/reports/style-options` | The 3 colour palettes, 3 fonts and 3 text sizes a report can use |
+| GET | `/api/reports/style-options` | The colour palettes, fonts and text sizes a report can use |
 | GET | `/api/reports/{slug}` | Report with all pages and its `style` (JSON) |
 | PUT | `/api/reports/{slug}/style` | Body `{"palette": "ocean", "font_family": "georgia", "font_size": "large"}`: save the report's style, applied to every export |
 | GET | `/api/reports/{slug}/html` | Report as a web page |

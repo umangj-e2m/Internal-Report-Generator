@@ -23,7 +23,6 @@ export const reportService = {
     (await apiClient.put(ENDPOINTS.REPORT_STYLE(slug), style)).data,
 
   htmlUrl: (slug) => buildApiUrl(ENDPOINTS.REPORT_HTML(slug)),
-
   pdfUrl: (slug, { download = false } = {}) =>
     `${buildApiUrl(ENDPOINTS.REPORT_PDF(slug))}${download ? '?download=true' : ''}`,
 
