@@ -35,6 +35,7 @@ class ReportSummaryOut(BaseModel):
 
 
 class ReportStyleOut(BaseModel):
+    brand: str
     palette: str
     font_family: str
     font_size: str
@@ -63,10 +64,18 @@ class SizeOut(BaseModel):
     label: str
 
 
+class BrandOut(BaseModel):
+    key: str
+    name: str
+    logo_file: str
+    style: ReportStyleOut
+
+
 class StyleOptionsOut(BaseModel):
     palettes: list[PaletteOut]
     fonts: list[FontOut]
     sizes: list[SizeOut]
+    brands: list[BrandOut]
     defaults: ReportStyleOut
 
 

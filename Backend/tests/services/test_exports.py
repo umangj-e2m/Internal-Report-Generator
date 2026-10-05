@@ -7,7 +7,56 @@ from services.exports.charts import build_charts, build_page_chart
 from services.exports.docx_export import render_report_docx
 from services.exports.html_export import render_report_html, render_slides_html
 from services.exports.pptx_export import render_report_pptx
-from services.exports.themes import DEFAULT_THEME, PALETTES
+from config import get_settings
+from services.exports.slide_layout import fit_logo
+from services.exports.themes import BRANDS, DEFAULT_THEME, FONTS, PALETTES, SIZES
+
+
+def test_every_brand_has_a_logo_file_and_known_style_choices():
+    for brand in BRANDS.values():
+        assert (get_settings().report_logo_dir / brand.logo_file).is_file()
+        assert brand.palette in PALETTES
+        assert brand.font_family in FONTS
+        assert brand.font_size in SIZES
+
+
+def test_fit_logo_keeps_the_logo_proportions_inside_its_box():
+    box = (1.0, 1.0, 3.0, 1.0)
+
+    assert fit_logo(box, 1.0) == (1.0, 1.0, 1.0, 1.0)
+    assert fit_logo(box, 6.0) == (1.0, 1.25, 3.0, 0.5)
+    assert fit_logo(box, 1.0, align="center") == (2.0, 1.0, 1.0, 1.0)
+    assert fit_logo(box, 2.0, scale=0.5) == (1.0, 1.25, 1.0, 0.5)
+
+
+def _use_explore_brand(report) -> None:
+    report.brand = "explore"
+
+
+def test_html_and_slides_show_the_brand_logo_without_repeating_its_wordmark(sample_report):
+    _use_explore_brand(sample_report)
+    html = render_report_html(sample_report, mode="web")
+    slides = render_slides_html(sample_report)
+
+    assert 'alt="Explore Media logo"' in html and 'alt="Explore Media logo"' in slides
+    header = html.split('class="web-header"')[1].split("</header>")[0]
+    assert "<span>Explore Media</span>" not in header
+    assert "<span>Explore Media</span>" in html.split('class="web-footer"')[1]
+    assert "E2M Solutions" not in html and "E2M Solutions" not in slides
+
+
+def test_docx_and_pptx_use_the_brand_logo_and_name(sample_report):
+    _use_explore_brand(sample_report)
+    document = Document(BytesIO(render_report_docx(sample_report)))
+    presentation = Presentation(BytesIO(render_report_pptx(sample_report)))
+    header_text = "".join(document.sections[0].header._element.itertext())
+    slide_texts = [shape.text_frame.text for slide in presentation.slides
+                   for shape in slide.shapes if shape.has_text_frame]
+
+    assert "pic:pic" in document.sections[0].header._element.xml
+    assert "Explore Media" not in header_text and "E2M Solutions" not in header_text
+    assert any("Explore Media" in text for text in slide_texts)
+    assert not any("E2M Solutions" in text for text in slide_texts)
 
 
 def test_web_html_contains_header_summary_table_and_page_sections(sample_report):

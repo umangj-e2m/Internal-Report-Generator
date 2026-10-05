@@ -11,7 +11,7 @@ from pptx.util import Emu, Pt
 
 from models.db import Report
 from services.exports import slide_layout as L
-from services.exports.helpers import logo_path
+from services.exports.helpers import logo_aspect, logo_path, show_brand_name
 from services.exports.slides import (
     BODY_TOP,
     CONTENT_WIDTH,
@@ -219,7 +219,7 @@ def _page_content_slide(slide, _: SlideDeck, item: Slide) -> None:
 
 
 def _closing_slide(slide, deck: SlideDeck, _: Slide) -> None:
-    _logo(slide, L.CLOSING_LOGO)
+    _logo(slide, L.CLOSING_LOGO, align="center")
     _text(slide, L.CLOSING_TITLE, "Thank you", 40, bold=True, color=_primary(), align=PP_ALIGN.CENTER)
     _rect(slide, L.CLOSING_BAR, _accent())
     _text(slide, L.CLOSING_LEAD, "View the full report online", 14, color=MUTED,
@@ -244,8 +244,9 @@ _BUILDERS = {
 # ---------- Shared pieces ----------
 def _chrome(slide, deck: SlideDeck, item: Slide) -> None:
     _logo(slide, L.HEADER_LOGO)
-    _text(slide, L.HEADER_BRAND, deck.brand_name, 12, bold=True, color=_primary(),
-          anchor=MSO_ANCHOR.MIDDLE)
+    if show_brand_name(deck.theme.brand):
+        _text(slide, L.HEADER_BRAND, deck.brand_name, 12, bold=True, color=_primary(),
+              anchor=MSO_ANCHOR.MIDDLE)
     _text(slide, L.HEADER_SITE, deck.site_name, 11, bold=True, color=_primary(),
           align=PP_ALIGN.RIGHT, anchor=MSO_ANCHOR.MIDDLE)
     _line(slide, MARGIN_X, L.HEADER_LINE_Y, L.RIGHT_EDGE, BORDER)
@@ -400,10 +401,11 @@ def _picture(slide, image: bytes, box) -> None:
     slide.shapes.add_picture(BytesIO(image), _in(x), _in(y), _in(width), _in(height))
 
 
-def _logo(slide, box) -> None:
-    path = logo_path()
+def _logo(slide, box, align: str = "left") -> None:
+    brand = _theme.get().brand
+    path = logo_path(brand)
     if path:
-        x, y, width, height = box
+        x, y, width, height = L.fit_logo(box, logo_aspect(brand), align, brand.logo_scale)
         slide.shapes.add_picture(str(path), _in(x), _in(y), _in(width), _in(height))
 
 

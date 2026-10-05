@@ -36,13 +36,12 @@ class Settings(BaseSettings):
     )
     summary_max_chars: int = 700
 
-    report_brand_name: str = "E2M Solutions"
-    report_logo_path: Path = BASE_DIR.parent / "Frontend" / "public" / "E2M_Logo-Black.png"
+    report_logo_dir: Path = BASE_DIR.parent / "Frontend" / "public"
     report_timezone: str = "Asia/Kolkata"
 
-    @field_validator("report_logo_path")
+    @field_validator("report_logo_dir")
     @classmethod
-    def _resolve_logo_path(cls, value: Path) -> Path:
+    def _resolve_logo_dir(cls, value: Path) -> Path:
         return value if value.is_absolute() else (BASE_DIR / value).resolve()
 
 

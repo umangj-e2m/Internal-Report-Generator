@@ -4,6 +4,8 @@ from app import app
 from services.scraper.service import get_scraper
 from tests.fixtures.sample_site import BASE, make_scraper
 
+DEFAULT_STYLE = {"brand": "e2m", "palette": "mono", "font_family": "segoe", "font_size": "medium"}
+
 
 def _create(client, url: str = f"{BASE}/") -> dict:
     response = client.post("/api/reports", json={"url": url})
@@ -76,7 +78,7 @@ def test_style_options_list_palettes_fonts_and_sizes(client):
     assert response.status_code == 200
     options = response.json()
     assert [item["key"] for item in options["palettes"]] == [
-        "classic", "ocean", "berry", "forest", "royal", "charcoal",
+        "mono", "classic", "ocean", "berry", "forest", "royal", "charcoal", "emerald", "amber",
     ]
     assert [item["key"] for item in options["fonts"]] == [
         "segoe", "georgia", "calibri", "arial", "cambria", "trebuchet",
@@ -84,18 +86,28 @@ def test_style_options_list_palettes_fonts_and_sizes(client):
     ]
     assert [item["key"] for item in options["sizes"]] == ["small", "medium", "large"]
     assert set(options["palettes"][0]) == {"key", "label", "primary", "accent"}
-    assert options["defaults"] == {"palette": "classic", "font_family": "segoe", "font_size": "medium"}
+    assert options["defaults"] == DEFAULT_STYLE
+    assert options["brands"] == [
+        {"key": "e2m", "name": "E2M Solutions", "logo_file": "E2M_Logo-Black.png",
+         "style": DEFAULT_STYLE},
+        {"key": "explore", "name": "Explore Media", "logo_file": "explore_logo.png",
+         "style": {"brand": "explore", "palette": "emerald", "font_family": "trebuchet",
+                   "font_size": "medium"}},
+        {"key": "inexture", "name": "Inexture", "logo_file": "inx-dark-logos-new.png",
+         "style": {"brand": "inexture", "palette": "amber", "font_family": "calibri",
+                   "font_size": "medium"}},
+    ]
 
 
 def test_new_report_uses_the_default_style(client):
     report = _create(client)
 
-    assert report["style"] == {"palette": "classic", "font_family": "segoe", "font_size": "medium"}
+    assert report["style"] == DEFAULT_STYLE
 
 
 def test_update_style_is_saved_and_applied_to_the_html(client):
     created = _create(client)
-    style = {"palette": "berry", "font_family": "calibri", "font_size": "small"}
+    style = {"brand": "explore", "palette": "berry", "font_family": "calibri", "font_size": "small"}
 
     response = client.put(f"/api/reports/{created['slug']}/style", json=style)
 
@@ -104,24 +116,22 @@ def test_update_style_is_saved_and_applied_to_the_html(client):
     assert client.get(f"/api/reports/{created['slug']}").json()["style"] == style
     html = client.get(f"/api/reports/{created['slug']}/html").text
     assert "--primary: #3D1E4F;" in html and "--font-scale: 0.92;" in html
+    assert 'alt="Explore Media logo"' in html
 
 
-def test_update_style_rejects_unknown_choices(client):
+@pytest.mark.parametrize("field, value", [("brand", "acme"), ("palette", "neon")])
+def test_update_style_rejects_unknown_choices(client, field, value):
     created = _create(client)
 
     response = client.put(
-        f"/api/reports/{created['slug']}/style",
-        json={"palette": "neon", "font_family": "segoe", "font_size": "medium"},
+        f"/api/reports/{created['slug']}/style", json={**DEFAULT_STYLE, field: value},
     )
 
     assert response.status_code == 422
 
 
 def test_update_style_for_unknown_slug_returns_404(client):
-    response = client.put(
-        "/api/reports/does-not-exist/style",
-        json={"palette": "classic", "font_family": "segoe", "font_size": "medium"},
-    )
+    response = client.put("/api/reports/does-not-exist/style", json=DEFAULT_STYLE)
 
     assert response.status_code == 404
 

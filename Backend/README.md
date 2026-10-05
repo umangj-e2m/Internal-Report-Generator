@@ -44,9 +44,9 @@ auto-reload on http://127.0.0.1:8000. Host, port and reload come from `APP_HOST`
 | GET | `/api/health` | API and database status |
 | POST | `/api/reports` | Body `{"url": "https://example.com"}`: read the site and create a report |
 | GET | `/api/reports?page=1&page_size=10&search=` | Paginated list, newest first |
-| GET | `/api/reports/style-options` | The colour palettes, fonts and text sizes a report can use |
+| GET | `/api/reports/style-options` | The company brands (logo, name and their own style), colour palettes, fonts and text sizes a report can use |
 | GET | `/api/reports/{slug}` | Report with all pages and its `style` (JSON) |
-| PUT | `/api/reports/{slug}/style` | Body `{"palette": "ocean", "font_family": "georgia", "font_size": "large"}`: save the report's style, applied to every export |
+| PUT | `/api/reports/{slug}/style` | Body `{"brand": "explore", "palette": "emerald", "font_family": "trebuchet", "font_size": "medium"}`: save the report's branding and style, applied to every export |
 | GET | `/api/reports/{slug}/html` | Report as a web page |
 | GET | `/api/reports/{slug}/pdf` | PDF shown inline; add `?download=true` to download |
 | GET | `/api/reports/{slug}/docx` | DOCX download |
@@ -74,8 +74,12 @@ A website that cannot be read returns `422` with a readable `detail` message; an
 | `scripts/data/` | `seed_reports.py` |
 | `tests/` | `services/`, `routes/`, `integration/`, `smoke/`, shared `fixtures/` |
 
-The report logo is read from `REPORT_LOGO_PATH` (default: `../Frontend/public/E2M_Logo-Black.png`),
-so the frontend and the exported documents always use the same file.
+Each report is branded for one company (`BRANDS` in `services/exports/themes.py`: E2M Solutions,
+Explore Media, Inexture). The brand sets the logo and company name in every export and its default
+palette, font and text size. Logos are read from `REPORT_LOGO_DIR` (default: `../Frontend/public`),
+so the frontend and the exported documents always use the same files. To add a company, put its
+logo in that folder and add a `Brand` entry; set `wordmark=True` when the logo already spells the
+company name, so the name is not repeated beside it.
 
 ## Tests
 

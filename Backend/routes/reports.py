@@ -11,14 +11,7 @@ from services.exports.docx_export import render_report_docx
 from services.exports.html_export import render_report_html, render_slides_html
 from services.exports.pdf_export import render_report_pdf
 from services.exports.pptx_export import render_report_pptx
-from services.exports.themes import (
-    DEFAULT_FONT,
-    DEFAULT_PALETTE,
-    DEFAULT_SIZE,
-    FONTS,
-    PALETTES,
-    SIZES,
-)
+from services.exports.themes import BRANDS, DEFAULT_BRAND, FONTS, PALETTES, SIZES
 from services.reports import service as report_service
 from services.reports.helpers import to_detail, to_summary
 from services.scraper.service import WebsiteScraper, get_scraper
@@ -54,7 +47,11 @@ def get_style_options() -> StyleOptionsOut:
         palettes=[asdict(palette) for palette in PALETTES.values()],
         fonts=[asdict(font) for font in FONTS.values()],
         sizes=[asdict(size) for size in SIZES.values()],
-        defaults={"palette": DEFAULT_PALETTE, "font_family": DEFAULT_FONT, "font_size": DEFAULT_SIZE},
+        brands=[
+            {"key": brand.key, "name": brand.name, "logo_file": brand.logo_file, "style": brand.style}
+            for brand in BRANDS.values()
+        ],
+        defaults=BRANDS[DEFAULT_BRAND].style,
     )
 
 
@@ -68,7 +65,7 @@ def update_report_style(
     slug: str, payload: UpdateReportStyleRequest, db: Session = Depends(get_db)
 ) -> ReportDetailOut:
     report = report_service.update_style(
-        db, slug, payload.palette, payload.font_family, payload.font_size
+        db, slug, payload.brand, payload.palette, payload.font_family, payload.font_size
     )
     return to_detail(report)
 

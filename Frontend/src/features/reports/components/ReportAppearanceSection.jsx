@@ -1,16 +1,6 @@
-import CheckIcon from '@mui/icons-material/Check';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import {
-  Box,
-  Button,
-  ButtonBase,
-  MenuItem,
-  Select,
-  ToggleButton,
-  ToggleButtonGroup,
-  Typography,
-} from '@mui/material';
+import { Box, ButtonBase, Typography } from '@mui/material';
 import { useContext } from 'react';
 
 import { SidebarContext, SidebarItem, SidebarSection } from '@/components/layout/Sidebar';
@@ -19,85 +9,128 @@ import { useNotification } from '@/hooks/useNotification';
 import { useStyleOptions } from '../hooks/useStyleOptions';
 import { useUpdateReportStyle } from '../hooks/useUpdateReportStyle';
 
-const fieldLabelSx = { mb: 0.75, fontSize: 12, fontWeight: 600, color: 'text.secondary' };
+const SECTION_TITLE = 'Company branding';
 
-const toggleSx = {
-  textTransform: 'none',
-  color: 'text.primary',
-  borderColor: 'divider',
-  '&.Mui-selected, &.Mui-selected:hover': {
-    color: 'primary.main',
-    bgcolor: 'rgba(27, 35, 64, 0.08)',
-    fontWeight: 700,
-  },
-};
-
-function Field({ label, id, children }) {
+function DetailRow({ label, children }) {
   return (
-    <Box sx={{ mb: 2 }}>
-      <Typography id={id} sx={fieldLabelSx}>
+    <Box component="span" sx={{ display: 'contents' }}>
+      <Box component="span" sx={{ color: 'text.secondary' }}>
         {label}
-      </Typography>
-      {children}
-    </Box>
-  );
-}
-
-function FontOption({ font }) {
-  return (
-    <Box
-      component="span"
-      sx={{ display: 'flex', alignItems: 'center', gap: 1.25, fontFamily: font.css_stack }}
-    >
-      <Box component="span" aria-hidden sx={{ fontSize: 18, lineHeight: 1, width: 26 }}>
-        Aa
       </Box>
-      <Box component="span" sx={{ fontSize: 14 }}>
-        {font.label}
+      <Box
+        component="span"
+        sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0, fontWeight: 600 }}
+      >
+        {children}
       </Box>
     </Box>
   );
 }
 
-function PaletteSwatch({ palette, selected, onSelect }) {
+function BrandCard({ brand, palette, font, size, selected, onSelect }) {
   return (
     <ButtonBase
       onClick={onSelect}
       aria-pressed={selected}
-      aria-label={`${palette.label} palette`}
+      aria-label={`${brand.name} branding`}
       sx={{
+        width: '100%',
         flexDirection: 'column',
-        gap: 0.5,
-        p: 0.5,
+        alignItems: 'stretch',
+        gap: 1,
+        p: 1,
         borderRadius: 2,
         border: 2,
-        borderColor: selected ? `#${palette.primary}` : 'transparent',
-        transition: 'border-color 0.2s ease',
-        '&:hover': { bgcolor: 'rgba(27, 35, 64, 0.04)' },
+        borderColor: selected ? `#${palette.primary}` : 'divider',
+        bgcolor: 'background.paper',
+        textAlign: 'left',
+        transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+        '&:hover': { boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)' },
       }}
     >
-      <Box
-        sx={{
-          position: 'relative',
-          display: 'flex',
-          width: '100%',
-          height: 32,
-          borderRadius: 1.5,
-          overflow: 'hidden',
-          boxShadow: 'inset 0 0 0 1px rgba(0, 0, 0, 0.08)',
-        }}
-      >
-        <Box sx={{ flex: 3, bgcolor: `#${palette.primary}` }} />
-        <Box sx={{ flex: 2, bgcolor: `#${palette.accent}` }} />
-        {selected ? (
-          <CheckIcon
-            sx={{ position: 'absolute', inset: 0, m: 'auto', fontSize: 18, color: '#FFFFFF' }}
+      <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+        <Box
+          component="span"
+          sx={{
+            display: 'grid',
+            placeItems: 'center',
+            flexShrink: 0,
+            width: 92,
+            height: 36,
+            px: 0.75,
+            borderRadius: 1.5,
+            bgcolor: '#F7F8FB',
+          }}
+        >
+          <Box
+            component="img"
+            src={`/${brand.logo_file}`}
+            alt=""
+            sx={{ maxWidth: '100%', maxHeight: 26, objectFit: 'contain' }}
           />
+        </Box>
+        <Typography
+          component="span"
+          noWrap
+          sx={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, lineHeight: 1.3 }}
+        >
+          {brand.name}
+        </Typography>
+        {selected ? (
+          <CheckCircleIcon sx={{ fontSize: 18, color: `#${palette.primary}` }} />
         ) : undefined}
       </Box>
-      <Typography sx={{ fontSize: 12, fontWeight: selected ? 700 : 500 }}>
-        {palette.label}
-      </Typography>
+
+      <Box
+        component="span"
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'auto 1fr',
+          columnGap: 1.5,
+          rowGap: 0.5,
+          px: 0.5,
+          pt: 1,
+          borderTop: 1,
+          borderColor: 'divider',
+          fontSize: 11.5,
+          lineHeight: 1.4,
+        }}
+      >
+        <DetailRow label="Colours">
+          {[palette.primary, palette.accent].map((color) => (
+            <Box
+              key={color}
+              component="span"
+              title={`#${color}`}
+              sx={{
+                flexShrink: 0,
+                width: 12,
+                height: 12,
+                borderRadius: '50%',
+                bgcolor: `#${color}`,
+                boxShadow: 'inset 0 0 0 1px rgba(0, 0, 0, 0.08)',
+              }}
+            />
+          ))}
+          <Box component="span" sx={{ ml: 0.25 }}>
+            {palette.label}
+          </Box>
+        </DetailRow>
+        <DetailRow label="Font">
+          <Box
+            component="span"
+            sx={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontFamily: font.css_stack,
+            }}
+          >
+            {font.label}
+          </Box>
+        </DetailRow>
+        <DetailRow label="Text size">{size.label}</DetailRow>
+      </Box>
     </ButtonBase>
   );
 }
@@ -110,10 +143,10 @@ function ReportAppearanceSection({ report }) {
 
   if (collapsed) {
     return (
-      <SidebarSection title="Appearance">
+      <SidebarSection title={SECTION_TITLE}>
         <SidebarItem
           icon={<PaletteOutlinedIcon fontSize="small" />}
-          label="Appearance"
+          label={SECTION_TITLE}
           onClick={onExpand}
         />
       </SidebarSection>
@@ -122,89 +155,33 @@ function ReportAppearanceSection({ report }) {
   if (!options || !report.style) return null;
 
   const style = updateStyle.isPending ? updateStyle.variables : report.style;
-  const change = (patch) =>
-    updateStyle.mutate(
-      { ...style, ...patch },
-      { onError: () => notify('Could not update the report style. Please try again.', 'error') },
-    );
   const fontsByKey = Object.fromEntries(options.fonts.map((font) => [font.key, font]));
-  const isDefault = Object.entries(options.defaults).every(([key, value]) => style[key] === value);
+  const palettesByKey = Object.fromEntries(
+    options.palettes.map((palette) => [palette.key, palette]),
+  );
+  const sizesByKey = Object.fromEntries(options.sizes.map((size) => [size.key, size]));
+  const applyBrand = (brand) => {
+    const isApplied = Object.entries(brand.style).every(([key, value]) => style[key] === value);
+    if (isApplied) return;
+    updateStyle.mutate(brand.style, {
+      onError: () => notify('Could not update the report branding. Please try again.', 'error'),
+    });
+  };
 
   return (
-    <SidebarSection
-      title="Appearance"
-      action={
-        <Button
-          size="small"
-          color="secondary"
-          startIcon={<RestartAltIcon sx={{ fontSize: '16px !important' }} />}
-          onClick={() => change(options.defaults)}
-          disabled={isDefault}
-          aria-label="Reset to default"
-          sx={{
-            minWidth: 0,
-            px: 1,
-            py: 0.25,
-            borderRadius: 1.5,
-            fontSize: 12,
-            fontWeight: 600,
-            lineHeight: 1.5,
-            '& .MuiButton-startIcon': { mr: 0.5 },
-          }}
-        >
-          Reset
-        </Button>
-      }
-    >
-      <Box sx={{ px: 1.5, pt: 0.5 }}>
-        <Field label="Colour palette">
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0.5 }}>
-            {options.palettes.map((palette) => (
-              <PaletteSwatch
-                key={palette.key}
-                palette={palette}
-                selected={style.palette === palette.key}
-                onSelect={() => change({ palette: palette.key })}
-              />
-            ))}
-          </Box>
-        </Field>
-
-        <Field label="Font style" id="report-font-label">
-          <Select
-            fullWidth
-            size="small"
-            value={style.font_family}
-            onChange={(event) => change({ font_family: event.target.value })}
-            labelId="report-font-label"
-            renderValue={(key) => <FontOption font={fontsByKey[key]} />}
-            MenuProps={{ slotProps: { paper: { sx: { maxHeight: 360 } } } }}
-            sx={{ borderRadius: 2, '& .MuiSelect-select': { py: 1 } }}
-          >
-            {options.fonts.map((font) => (
-              <MenuItem key={font.key} value={font.key} sx={{ py: 1 }}>
-                <FontOption font={font} />
-              </MenuItem>
-            ))}
-          </Select>
-        </Field>
-
-        <Field label="Text size">
-          <ToggleButtonGroup
-            exclusive
-            fullWidth
-            size="small"
-            value={style.font_size}
-            onChange={(_, size) => size && change({ font_size: size })}
-            aria-label="Text size"
-          >
-            {options.sizes.map((size) => (
-              <ToggleButton key={size.key} value={size.key} sx={{ ...toggleSx, fontSize: 13 }}>
-                {size.label}
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-        </Field>
+    <SidebarSection title={SECTION_TITLE}>
+      <Box sx={{ display: 'grid', gap: 0.75, px: 1.5, pt: 0.5, pb: 2 }}>
+        {options.brands.map((brand) => (
+          <BrandCard
+            key={brand.key}
+            brand={brand}
+            palette={palettesByKey[brand.style.palette]}
+            font={fontsByKey[brand.style.font_family]}
+            size={sizesByKey[brand.style.font_size]}
+            selected={brand.key === style.brand}
+            onSelect={() => applyBrand(brand)}
+          />
+        ))}
       </Box>
     </SidebarSection>
   );

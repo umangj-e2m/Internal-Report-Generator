@@ -430,8 +430,11 @@ p {
 }
 
 .web-header__brand img {
-  width: 36px;
+  width: auto;
+  max-width: 220px;
   height: 36px;
+  object-fit: contain;
+  object-position: left center;
 }
 
 .web-header__title {

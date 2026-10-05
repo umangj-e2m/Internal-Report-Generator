@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import MainLayout from '@/components/layout/MainLayout';
@@ -26,7 +26,7 @@ vi.mock('@/features/reports/components/PdfPreview', () => ({
   default: ({ file, title }) => <div role="document" aria-label={title} data-file={file} />,
 }));
 
-const DEFAULT_VERSION = 'v=classic-segoe-medium';
+const DEFAULT_VERSION = 'v=e2m-mono-segoe-medium';
 
 const renderView = (slug = 'acme-cloud-docs-demo01') =>
   renderWithProviders(<ReportView />, {
@@ -98,94 +98,71 @@ describe('Report view page (shareable link)', () => {
     );
   });
 
-  it('shows every palette, font and size with the current style selected', async () => {
+  it('lists the three companies with their logos and selects the report brand', async () => {
     renderView();
 
-    expect(await screen.findByRole('button', { name: 'Classic palette' })).toHaveAttribute(
+    const e2m = await screen.findByRole('button', { name: 'E2M Solutions branding' });
+    expect(e2m).toHaveAttribute('aria-pressed', 'true');
+    expect(e2m.querySelector('img')).toHaveAttribute('src', '/E2M_Logo-Black.png');
+    const explore = within(screen.getByRole('button', { name: 'Explore Media branding' }));
+    expect(explore.getByText('Emerald')).toBeInTheDocument();
+    expect(explore.getByText('Trebuchet MS')).toBeInTheDocument();
+    expect(explore.getByText('Medium')).toBeInTheDocument();
+    expect(explore.getByTitle('#2EBD54')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Explore Media branding' })).toHaveAttribute(
       'aria-pressed',
-      'true',
+      'false',
     );
-    for (const palette of sampleStyleOptions.palettes.slice(1)) {
-      expect(screen.getByRole('button', { name: `${palette.label} palette` })).toHaveAttribute(
-        'aria-pressed',
-        'false',
-      );
-    }
-    expect(screen.getByRole('combobox', { name: 'Font style' })).toHaveTextContent('Segoe UI');
-    expect(screen.getByRole('button', { name: 'Medium' })).toHaveAttribute('aria-pressed', 'true');
-  });
-
-  it('saves a new style and reloads the preview with it', async () => {
-    const nextStyle = { palette: 'ocean', font_family: 'segoe', font_size: 'medium' };
-    reportService.updateStyle.mockResolvedValue({ ...sampleReportDetail, style: nextStyle });
-    const user = userEvent.setup();
-    renderView();
-
-    await user.click(await screen.findByRole('button', { name: 'Ocean palette' }));
-
-    expect(reportService.updateStyle).toHaveBeenCalledWith('acme-cloud-docs-demo01', nextStyle);
-    expect(await screen.findByTitle('Acme Cloud Docs – HTML view')).toHaveAttribute(
-      'src',
-      '/api/reports/acme-cloud-docs-demo01/html?v=ocean-segoe-medium',
-    );
-    expect(screen.getByRole('button', { name: 'Ocean palette' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Inexture branding' })).toHaveAttribute(
       'aria-pressed',
-      'true',
+      'false',
     );
+    expect(screen.queryByRole('button', { name: /palette/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Font style' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Text size' })).not.toBeInTheDocument();
   });
 
-  it('lists every font in the dropdown and saves the chosen one', async () => {
-    const nextStyle = { palette: 'classic', font_family: 'times', font_size: 'medium' };
-    reportService.updateStyle.mockResolvedValue({ ...sampleReportDetail, style: nextStyle });
+  it('applies a company logo, palette, font and size in one click', async () => {
+    const explore = sampleStyleOptions.brands[1].style;
+    reportService.updateStyle.mockResolvedValue({ ...sampleReportDetail, style: explore });
     const user = userEvent.setup();
     renderView();
 
-    await user.click(await screen.findByRole('combobox', { name: 'Font style' }));
-    const options = screen.getAllByRole('option');
-    expect(options.map((option) => option.textContent)).toEqual(
-      sampleStyleOptions.fonts.map((font) => `Aa${font.label}`),
-    );
-    await user.click(screen.getByRole('option', { name: /times new roman/i }));
+    await user.click(await screen.findByRole('button', { name: 'Explore Media branding' }));
 
-    expect(reportService.updateStyle).toHaveBeenCalledWith('acme-cloud-docs-demo01', nextStyle);
-    expect(await screen.findByRole('combobox', { name: 'Font style' })).toHaveTextContent(
-      'Times New Roman',
-    );
-  });
-
-  it('disables reset while the report already uses the default style', async () => {
-    renderView();
-
-    expect(await screen.findByRole('button', { name: /reset to default/i })).toBeDisabled();
-  });
-
-  it('resets a custom style to the default', async () => {
-    const customStyle = { palette: 'royal', font_family: 'times', font_size: 'large' };
-    reportService.get.mockResolvedValue({ ...sampleReportDetail, style: customStyle });
-    reportService.updateStyle.mockResolvedValue(sampleReportDetail);
-    const user = userEvent.setup();
-    renderView();
-
-    await user.click(await screen.findByRole('button', { name: /reset to default/i }));
-
-    expect(reportService.updateStyle).toHaveBeenCalledWith(
-      'acme-cloud-docs-demo01',
-      sampleStyleOptions.defaults,
-    );
+    expect(reportService.updateStyle).toHaveBeenCalledWith('acme-cloud-docs-demo01', explore);
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: /reset to default/i })).toBeDisabled(),
+      expect(screen.getByRole('button', { name: 'Explore Media branding' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      ),
+    );
+    expect(screen.getByTitle('Acme Cloud Docs – HTML view')).toHaveAttribute(
+      'src',
+      '/api/reports/acme-cloud-docs-demo01/html?v=explore-emerald-trebuchet-medium',
     );
   });
 
-  it('changes the text size', async () => {
-    const nextStyle = { palette: 'classic', font_family: 'segoe', font_size: 'large' };
-    reportService.updateStyle.mockResolvedValue({ ...sampleReportDetail, style: nextStyle });
+  it('does not save again when the selected company is already applied', async () => {
     const user = userEvent.setup();
     renderView();
 
-    await user.click(await screen.findByRole('button', { name: 'Large' }));
+    await user.click(await screen.findByRole('button', { name: 'E2M Solutions branding' }));
 
-    expect(reportService.updateStyle).toHaveBeenCalledWith('acme-cloud-docs-demo01', nextStyle);
+    expect(reportService.updateStyle).not.toHaveBeenCalled();
+  });
+
+  it('re-applies the company style to a report saved with other colours', async () => {
+    const inexture = sampleStyleOptions.brands[2].style;
+    const oldStyle = { ...inexture, palette: 'royal', font_family: 'times', font_size: 'large' };
+    reportService.get.mockResolvedValue({ ...sampleReportDetail, style: oldStyle });
+    reportService.updateStyle.mockResolvedValue({ ...sampleReportDetail, style: inexture });
+    const user = userEvent.setup();
+    renderView();
+
+    await user.click(await screen.findByRole('button', { name: 'Inexture branding' }));
+
+    expect(reportService.updateStyle).toHaveBeenCalledWith('acme-cloud-docs-demo01', inexture);
   });
 
   it('shows a not-found message for an unknown slug', async () => {

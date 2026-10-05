@@ -16,39 +16,30 @@ export const SidebarContext = createContext({
   onExpand: undefined,
 });
 
-export function SidebarSection({ title, action, children }) {
+export function SidebarSection({ title, children }) {
   const { collapsed } = useContext(SidebarContext);
 
   return (
     <Box component="section" aria-label={title} sx={{ px: 1.5, pt: collapsed ? 1.5 : 2 }}>
       {collapsed ? undefined : (
-        <Box
+        <Typography
+          component="h2"
           sx={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 1,
             minHeight: 24,
-            pl: 1.5,
-            pr: action ? 0.5 : 1.5,
+            px: 1.5,
             mb: 0.5,
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'text.secondary',
+            whiteSpace: 'nowrap',
           }}
         >
-          <Typography
-            component="h2"
-            sx={{
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              color: 'text.secondary',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {title}
-          </Typography>
-          {action}
-        </Box>
+          {title}
+        </Typography>
       )}
       <List disablePadding>{children}</List>
     </Box>

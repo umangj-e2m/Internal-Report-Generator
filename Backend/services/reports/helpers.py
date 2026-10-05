@@ -54,6 +54,7 @@ def to_detail(report: Report) -> ReportDetailOut:
         **_report_fields(report),
         "share_url": share_url(report.slug),
         "style": {
+            "brand": theme.brand.key,
             "palette": theme.palette.key,
             "font_family": theme.font.key,
             "font_size": theme.size.key,

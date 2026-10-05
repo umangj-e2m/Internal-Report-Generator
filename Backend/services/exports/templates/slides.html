@@ -7,8 +7,8 @@
 {% macro hline(y, cls="line") -%}
 <div class="el {{ cls }}" style="{{ box((S.MARGIN_X, y, S.CONTENT_WIDTH, 0)) }}"></div>
 {%- endmacro %}
-{% macro logo(b) -%}
-{% if logo_src %}<img class="el" src="{{ logo_src }}" alt="{{ deck.brand_name }} logo" style="{{ box(b) }}" />{% endif %}
+{% macro logo(b, align="left") -%}
+{% if logo_src %}<img class="el" src="{{ logo_src }}" alt="{{ deck.brand_name }} logo" style="{{ box(logo_box(b, align)) }}" />{% endif %}
 {%- endmacro %}
 {% macro page_heading(data) -%}
 <div class="el badge middle center" style="{{ box(L.PAGE_BADGE) }};font-size:calc(var(--fpt)*18)">{{ "%02d" | format(data.position) }}</div>
@@ -34,7 +34,9 @@
       <section class="slide slide--{{ slide.kind }}" aria-label="Slide {{ slide.number }} of {{ deck.slides | length }}">
         {% if slide.kind not in ("title", "closing") %}
         {{ logo(L.HEADER_LOGO) }}
+        {% if show_brand_name %}
         {{ text(L.HEADER_BRAND, deck.brand_name, 12, "bold primary middle") }}
+        {% endif %}
         {{ text(L.HEADER_SITE, deck.site_name, 11, "bold primary middle right nowrap") }}
         {{ hline(L.HEADER_LINE_Y) }}
         {{ hline(L.FOOTER_LINE_Y) }}
@@ -154,7 +156,7 @@
         {% endfor %}
 
         {% elif slide.kind == "closing" %}
-        {{ logo(L.CLOSING_LOGO) }}
+        {{ logo(L.CLOSING_LOGO, "center") }}
         {{ text(L.CLOSING_TITLE, "Thank you", 40, "bold primary center") }}
         {{ rect(L.CLOSING_BAR, "accent-fill") }}
         {{ text(L.CLOSING_LEAD, "View the full report online", 14, "muted center") }}

@@ -37,12 +37,15 @@ class SizeChoice:
 PALETTES = {
     palette.key: palette
     for palette in (
+        Palette("mono", "Mono", "000000", "5C5C5C"),
         Palette("classic", "Classic", BRAND_PRIMARY_HEX, BRAND_ACCENT_HEX),
         Palette("ocean", "Ocean", "0C3B5E", "0E9F9A"),
         Palette("berry", "Berry", "3D1E4F", "D9467A"),
         Palette("forest", "Forest", "1F4D3A", "D99A1E"),
         Palette("royal", "Royal", "1E3A8A", "F59E0B"),
         Palette("charcoal", "Charcoal", "2D3142", "E63946"),
+        Palette("emerald", "Emerald", "0C304F", "2EBD54"),
+        Palette("amber", "Amber", "1D2333", "FCA91F"),
     )
 }
 
@@ -85,9 +88,46 @@ SIZES = {
     )
 }
 
-DEFAULT_PALETTE = "classic"
-DEFAULT_FONT = "segoe"
-DEFAULT_SIZE = "medium"
+@dataclass(frozen=True)
+class Brand:
+    """A company the report is branded for: its logo and name, plus its own palette, font and size."""
+    key: str
+    name: str
+    logo_file: str
+    palette: str
+    font_family: str
+    font_size: str
+    # The logo already spells the company name, so the name is not repeated beside it.
+    wordmark: bool = False
+    # Logo files without empty margins look larger at the same height; below 1 shrinks them.
+    logo_scale: float = 1.0
+
+    @property
+    def style(self) -> dict[str, str]:
+        return {
+            "brand": self.key,
+            "palette": self.palette,
+            "font_family": self.font_family,
+            "font_size": self.font_size,
+        }
+
+
+BRANDS = {
+    brand.key: brand
+    for brand in (
+        Brand("e2m", "E2M Solutions", "E2M_Logo-Black.png", "mono", "segoe", "medium",
+              wordmark=True),
+        Brand("explore", "Explore Media", "explore_logo.png", "emerald", "trebuchet", "medium",
+              wordmark=True),
+        Brand("inexture", "Inexture", "inx-dark-logos-new.png", "amber", "calibri", "medium",
+              wordmark=True, logo_scale=0.75),
+    )
+}
+
+DEFAULT_BRAND = "e2m"
+DEFAULT_PALETTE = BRANDS[DEFAULT_BRAND].palette
+DEFAULT_FONT = BRANDS[DEFAULT_BRAND].font_family
+DEFAULT_SIZE = BRANDS[DEFAULT_BRAND].font_size
 
 
 @dataclass(frozen=True)
@@ -95,6 +135,7 @@ class ReportTheme:
     palette: Palette
     font: FontChoice
     size: SizeChoice
+    brand: Brand
 
     @property
     def primary(self) -> str:
@@ -123,16 +164,17 @@ class ReportTheme:
 
 
 def get_theme(palette: str | None = None, font: str | None = None,
-              size: str | None = None) -> ReportTheme:
+              size: str | None = None, brand: str | None = None) -> ReportTheme:
     return ReportTheme(
         palette=PALETTES.get(palette or "", PALETTES[DEFAULT_PALETTE]),
         font=FONTS.get(font or "", FONTS[DEFAULT_FONT]),
         size=SIZES.get(size or "", SIZES[DEFAULT_SIZE]),
+        brand=BRANDS.get(brand or "", BRANDS[DEFAULT_BRAND]),
     )
 
 
 def theme_for(report) -> ReportTheme:
-    return get_theme(report.palette, report.font_family, report.font_size)
+    return get_theme(report.palette, report.font_family, report.font_size, report.brand)
 
 
 DEFAULT_THEME = get_theme()

@@ -86,7 +86,7 @@ def build_deck(report: Report, fmt: ChartFormat) -> SlideDeck:
 
     return SlideDeck(
         report_title=REPORT_TITLE,
-        brand_name=settings.report_brand_name,
+        brand_name=theme.brand.name,
         site_name=report.site_name,
         source_url=report.source_url,
         share_url=share_url(report.slug),

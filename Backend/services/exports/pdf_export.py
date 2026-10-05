@@ -2,9 +2,13 @@ from html import escape
 
 from playwright.sync_api import sync_playwright
 
-from config import get_settings
 from models.db import Report
-from services.exports.helpers import generated_at_label, logo_data_uri
+from services.exports.helpers import (
+    generated_at_label,
+    header_logo_height_mm,
+    logo_data_uri,
+    show_brand_name,
+)
 from services.exports.html_export import render_report_html
 from services.exports.themes import BORDER_HEX, MUTED_HEX, ReportTheme, theme_for
 from services.shared.constants import REPORT_TITLE
@@ -24,14 +28,21 @@ def _row_style(theme: ReportTheme) -> str:
 
 
 def _header_template(site_name: str, theme: ReportTheme) -> str:
-    logo = logo_data_uri()
-    logo_html = f'<img src="{logo}" style="height:9mm;width:9mm;" />' if logo else ""
-    brand = escape(get_settings().report_brand_name)
+    brand = theme.brand
+    logo = logo_data_uri(brand)
+    logo_height = header_logo_height_mm(brand)
+    logo_html = (
+        f'<img src="{logo}" style="height:{logo_height}mm;width:auto;max-width:50mm;" />'
+        if logo else ""
+    )
+    name_html = (
+        f'<span style="font-size:10pt;font-weight:700;color:#{theme.primary};">{escape(brand.name)}</span>'
+        if show_brand_name(brand) else ""
+    )
     return (
         f'<div style="{_WRAPPER_STYLE}">'
         f'<div style="{_row_style(theme)}padding-bottom:2.5mm;border-bottom:1px solid #{BORDER_HEX};">'
-        f'<div style="display:flex;align-items:center;gap:3mm;">{logo_html}'
-        f'<span style="font-size:10pt;font-weight:700;color:#{theme.primary};">{brand}</span></div>'
+        f'<div style="display:flex;align-items:center;gap:3mm;">{logo_html}{name_html}</div>'
         f'<div style="text-align:right;line-height:1.35;">{REPORT_TITLE}<br/>'
         f'<span style="font-weight:600;color:#{theme.primary};">{escape(site_name)}</span></div>'
         "</div></div>"

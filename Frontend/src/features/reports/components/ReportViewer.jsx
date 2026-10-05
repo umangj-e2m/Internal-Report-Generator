@@ -19,7 +19,7 @@ const VIEWS = {
 };
 
 const styleVersion = (style) =>
-  style ? [style.palette, style.font_family, style.font_size].join('-') : '';
+  style ? [style.brand, style.palette, style.font_family, style.font_size].join('-') : '';
 
 function ReportViewer({ slug, title }) {
   const { data: report } = useReport(slug);

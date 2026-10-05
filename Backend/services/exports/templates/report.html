@@ -14,8 +14,8 @@
     {% if mode == "web" %}
     <header class="web-header">
       <div class="web-header__brand">
-        {% if logo_src %}<img src="{{ logo_src }}" alt="{{ brand_name }} logo" />{% endif %}
-        <span>{{ brand_name }}</span>
+        {% if logo_src %}<img src="{{ logo_src }}" alt="{{ brand_name }} logo" style="height: {{ 36 * logo_scale }}px" />{% endif %}
+        {% if show_brand_name %}<span>{{ brand_name }}</span>{% endif %}
       </div>
       <div class="web-header__title">
         <span>{{ report_title }}</span>

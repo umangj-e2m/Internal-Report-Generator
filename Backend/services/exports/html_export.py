@@ -6,7 +6,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from models.db import Report
 from services.exports import slide_layout
 from services.exports import slides as slide_model
-from services.exports.helpers import build_context, logo_data_uri
+from services.exports.helpers import build_context, logo_aspect, logo_data_uri, show_brand_name
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 
@@ -27,12 +27,18 @@ def render_report_html(report: Report, mode: RenderMode = "web") -> str:
 
 def render_slides_html(report: Report) -> str:
     deck = slide_model.build_deck(report, "svg")
+    brand = deck.theme.brand
+    aspect = logo_aspect(brand)
     return _env.get_template("slides.html").render(
         deck=deck,
         theme=deck.theme,
         L=slide_layout,
         S=slide_model,
-        logo_src=logo_data_uri(),
+        logo_src=logo_data_uri(brand),
+        show_brand_name=show_brand_name(brand),
+        logo_box=lambda box, align="left": slide_layout.fit_logo(
+            box, aspect, align, brand.logo_scale
+        ),
         box=_box,
     )
 

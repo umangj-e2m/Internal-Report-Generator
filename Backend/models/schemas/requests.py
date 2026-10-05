@@ -1,6 +1,6 @@
 from pydantic import BaseModel, HttpUrl, field_validator
 
-from services.exports.themes import FONTS, PALETTES, SIZES
+from services.exports.themes import BRANDS, FONTS, PALETTES, SIZES
 
 
 class CreateReportRequest(BaseModel):
@@ -8,9 +8,15 @@ class CreateReportRequest(BaseModel):
 
 
 class UpdateReportStyleRequest(BaseModel):
+    brand: str
     palette: str
     font_family: str
     font_size: str
+
+    @field_validator("brand")
+    @classmethod
+    def known_brand(cls, value: str) -> str:
+        return _one_of(value, BRANDS)
 
     @field_validator("palette")
     @classmethod

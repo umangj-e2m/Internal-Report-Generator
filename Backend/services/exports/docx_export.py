@@ -15,7 +15,14 @@ from docx.text.paragraph import Paragraph
 from config import get_settings
 from models.db import Report, ReportPage
 from services.exports.charts import ReportChart, build_charts, build_page_chart
-from services.exports.helpers import compute_totals, generated_at_label, logo_path, page_description
+from services.exports.helpers import (
+    compute_totals,
+    generated_at_label,
+    header_logo_height_mm,
+    logo_path,
+    page_description,
+    show_brand_name,
+)
 from services.exports.themes import (
     BORDER_HEX,
     DEFAULT_THEME,
@@ -184,11 +191,17 @@ def _build_header(section: Section, site_name: str) -> None:
         cell.paragraphs[0].paragraph_format.space_after = Pt(0)
         cell.paragraphs[0].paragraph_format.line_spacing = 1.0
 
-    logo = logo_path()
-    if logo:
-        logo_cell.paragraphs[0].add_run().add_picture(str(logo), width=Mm(9), height=Mm(9))
-    _run(brand_cell.paragraphs[0], get_settings().report_brand_name, size=10, bold=True,
-         color=_primary())
+    brand = _theme.get().brand
+    logo = logo_path(brand)
+    if show_brand_name(brand):
+        if logo:
+            logo_cell.paragraphs[0].add_run().add_picture(str(logo), width=Mm(9), height=Mm(9))
+        _run(brand_cell.paragraphs[0], brand.name, size=10, bold=True, color=_primary())
+    else:
+        wordmark_cell = logo_cell.merge(brand_cell)
+        wordmark_cell.paragraphs[0].add_run().add_picture(
+            str(logo), height=Mm(header_logo_height_mm(brand))
+        )
 
     title_line = title_cell.paragraphs[0]
     title_line.alignment = WD_ALIGN_PARAGRAPH.RIGHT

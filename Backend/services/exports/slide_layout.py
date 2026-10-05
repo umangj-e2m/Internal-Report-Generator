@@ -5,8 +5,23 @@ Box = tuple[float, float, float, float]
 
 RIGHT_EDGE = MARGIN_X + CONTENT_WIDTH
 
+
+def fit_logo(box: Box, aspect: float, align: str = "left", scale: float = 1.0) -> Box:
+    """The largest box with the logo's width/height `aspect` inside `box`, centred vertically.
+
+    `scale` below 1 shrinks the logo to that share of the box height.
+    """
+    x, y, width, height = box
+    fitted_width = min(width, height * scale * aspect)
+    fitted_height = fitted_width / aspect
+    if align == "center":
+        x += (width - fitted_width) / 2
+    return (x, y + (height - fitted_height) / 2, fitted_width, fitted_height)
+
+
 # ---------- Chrome on every content slide ----------
-HEADER_LOGO: Box = (MARGIN_X, 0.3, 0.42, 0.42)
+# Logo boxes are the space a logo may fill; `fit_logo` keeps its proportions inside it.
+HEADER_LOGO: Box = (MARGIN_X, 0.3, 2.4, 0.42)
 HEADER_BRAND: Box = (1.12, 0.3, 5.0, 0.42)
 HEADER_SITE: Box = (6.5, 0.3, RIGHT_EDGE - 6.5, 0.42)
 HEADER_LINE_Y = 0.9
@@ -19,7 +34,7 @@ SLIDE_TITLE_BAR: Box = (MARGIN_X, 1.72, 0.9, 0.06)
 
 # ---------- Title slide ----------
 TITLE_STRIP: Box = (0.0, 0.0, 0.35, SLIDE_HEIGHT)
-TITLE_LOGO: Box = (1.0, 0.9, 0.95, 0.95)
+TITLE_LOGO: Box = (1.0, 0.9, 3.6, 0.95)
 TITLE_EYEBROW: Box = (1.0, 2.55, 11.0, 0.4)
 TITLE_SITE: Box = (1.0, 2.95, 11.3, 1.1)
 TITLE_URL: Box = (1.0, 4.1, 11.3, 0.45)
@@ -79,7 +94,7 @@ TEXT_BAR_WIDTH = 0.05
 TEXT_INSET_X = 0.25
 
 # ---------- Closing slide ----------
-CLOSING_LOGO: Box = ((SLIDE_WIDTH - 0.95) / 2, 1.5, 0.95, 0.95)
+CLOSING_LOGO: Box = ((SLIDE_WIDTH - 3.6) / 2, 1.5, 3.6, 0.95)
 CLOSING_TITLE: Box = (MARGIN_X, 2.75, CONTENT_WIDTH, 0.8)
 CLOSING_BAR: Box = ((SLIDE_WIDTH - 1.2) / 2, 3.65, 1.2, 0.07)
 CLOSING_LEAD: Box = (MARGIN_X, 3.95, CONTENT_WIDTH, 0.4)
