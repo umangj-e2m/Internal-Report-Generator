@@ -1,4 +1,6 @@
 import base64
+import threading
+from contextlib import contextmanager
 from dataclasses import dataclass
 from io import BytesIO
 from typing import Literal
@@ -8,18 +10,15 @@ from matplotlib.figure import Figure
 from matplotlib.ticker import FuncFormatter, MaxNLocator
 
 from models.db import Report, ReportPage
-from services.shared.constants import BRAND_ACCENT_HEX, BRAND_MUTED_HEX, BRAND_PRIMARY_HEX
+from services.exports.themes import BORDER_HEX, MUTED_HEX, TEXT_HEX, ReportTheme, theme_for
 from utils.strings import truncate
 
 ChartFormat = Literal["svg", "png"]
 
-PRIMARY = f"#{BRAND_PRIMARY_HEX}"
-ACCENT = f"#{BRAND_ACCENT_HEX}"
-MUTED = f"#{BRAND_MUTED_HEX}"
-TEXT = "#1F2937"
-GRID = "#E5E7EB"
-PIE_COLORS = (PRIMARY, ACCENT, "#4A5578", "#F7A26A", "#9AA1B5", "#FBD3B6")
-PAGE_BAR_COLORS = (PRIMARY, ACCENT, "#9AA1B5")
+MUTED = f"#{MUTED_HEX}"
+TEXT = f"#{TEXT_HEX}"
+GRID = f"#{BORDER_HEX}"
+FALLBACK_FONTS = ["Segoe UI", "Arial", "DejaVu Sans"]
 
 MM_PER_INCH = 25.4
 WIDE_SIZE_MM = (178, 78)
@@ -28,11 +27,10 @@ PNG_DPI = 220
 PIE_LEGEND_CHARS = 44
 
 _MEDIA_TYPES = {"svg": "image/svg+xml", "png": "image/png"}
+_FONT_LOCK = threading.Lock()
 
 # Figures are built with the object API (no pyplot), so these globals are only read at render time.
 matplotlib.rcParams.update({
-    "font.family": "sans-serif",
-    "font.sans-serif": ["Segoe UI", "Arial", "DejaVu Sans"],
     "font.size": 8,
     "text.color": TEXT,
     "axes.labelcolor": MUTED,
@@ -60,33 +58,56 @@ def build_charts(report: Report, fmt: ChartFormat) -> list[ReportChart]:
     pages = report.pages
     if not pages:
         return []
+    theme = theme_for(report)
 
     def chart(title: str, caption: str, figure: Figure, wide: bool = False) -> ReportChart:
         return ReportChart(title, caption, _render(figure, fmt), _MEDIA_TYPES[fmt], wide)
 
     charts = []
-    if any(page.word_count for page in pages):
-        charts.append(chart("Words per page", "Each page's share of the site's written content.",
-                            _words_pie(pages), wide=True))
-    charts.append(chart("Links and images by page",
-                        "How the number of links and images changes across the pages.",
-                        _links_images_line(pages), wide=True))
+    with _theme_fonts(theme):
+        if any(page.word_count for page in pages):
+            charts.append(chart("Words per page",
+                                "Each page's share of the site's written content.",
+                                _words_pie(pages, theme), wide=True))
+        charts.append(chart("Links and images by page",
+                            "How the number of links and images changes across the pages.",
+                            _links_images_line(pages, theme), wide=True))
     return charts
 
 
-def build_page_chart(page: ReportPage, fmt: ChartFormat) -> ReportChart | None:
+def build_page_chart(page: ReportPage, fmt: ChartFormat, theme: ReportTheme) -> ReportChart | None:
     """Bars for one page's words, links and images; None when the page has none of them."""
     if not (page.word_count or page.link_count or page.image_count):
         return None
+    with _theme_fonts(theme):
+        image = _render(_page_bar(page, theme), fmt)
     return ReportChart(
-        "Content breakdown",
-        "Words, links and images found on this page.",
-        _render(_page_bar(page), fmt),
+        "Content breakdown", "Words, links and images found on this page.", image,
         _MEDIA_TYPES[fmt],
     )
 
 
-def _words_pie(pages: list[ReportPage]) -> Figure:
+@contextmanager
+def _theme_fonts(theme: ReportTheme):
+    """Text picks up its font when it is created, so figures must be built inside this context.
+
+    rcParams are process-wide, so the lock keeps concurrent exports from mixing their fonts.
+    """
+    with _FONT_LOCK, matplotlib.rc_context(
+        {"font.family": "sans-serif", "font.sans-serif": [theme.font_name, *FALLBACK_FONTS]}
+    ):
+        yield
+
+
+def _colors(theme: ReportTheme) -> tuple[str, str]:
+    return f"#{theme.primary}", f"#{theme.accent}"
+
+
+def _words_pie(pages: list[ReportPage], theme: ReportTheme) -> Figure:
+    primary, accent = _colors(theme)
+    tints = [f"#{theme.tint(color, amount)}"
+             for amount in (0.3, 0.55) for color in (theme.primary, theme.accent)]
+    pie_colors = (primary, accent, *tints)
     figure = _figure(WIDE_SIZE_MM, layout=None)
     # Fixed boxes: the donut on the left, the legend in the remaining width to its right.
     axes = figure.add_axes((0.02, 0.03, 0.4, 0.94))
@@ -95,7 +116,7 @@ def _words_pie(pages: list[ReportPage]) -> Figure:
 
     wedges, _, _ = axes.pie(
         values,
-        colors=[PIE_COLORS[index % len(PIE_COLORS)] for index in range(len(values))],
+        colors=[pie_colors[index % len(pie_colors)] for index in range(len(values))],
         startangle=90,
         counterclock=False,
         autopct=lambda pct: f"{pct:.0f}%" if pct >= 5 else "",
@@ -104,7 +125,7 @@ def _words_pie(pages: list[ReportPage]) -> Figure:
         textprops={"color": "white", "fontsize": 8, "fontweight": "bold"},
     )
     axes.text(0, 0.08, f"{total:,}", ha="center", va="center", fontsize=12,
-              fontweight="bold", color=PRIMARY)
+              fontweight="bold", color=primary)
     axes.text(0, -0.16, "words", ha="center", va="center", fontsize=8, color=MUTED)
     figure.legend(
         wedges,
@@ -117,7 +138,8 @@ def _words_pie(pages: list[ReportPage]) -> Figure:
     return figure
 
 
-def _page_bar(page: ReportPage) -> Figure:
+def _page_bar(page: ReportPage, theme: ReportTheme) -> Figure:
+    primary, accent = _colors(theme)
     figure = _figure(PAGE_BAR_SIZE_MM)
     axes = figure.add_subplot()
     series = (("Words", page.word_count), ("Links", page.link_count),
@@ -125,7 +147,8 @@ def _page_bar(page: ReportPage) -> Figure:
     values = [value for _, value in series]
     positions = list(range(len(series)))
 
-    bars = axes.barh(positions, values, height=0.6, color=PAGE_BAR_COLORS)
+    bars = axes.barh(positions, values, height=0.6,
+                     color=(primary, accent, f"#{theme.tint(theme.primary, 0.55)}"))
     axes.bar_label(bars, labels=[f"{value:,}" for value in values], padding=4, fontsize=8,
                    color=TEXT, fontweight="bold")
     axes.set_yticks(positions, [label for label, _ in series])
@@ -136,13 +159,14 @@ def _page_bar(page: ReportPage) -> Figure:
     return figure
 
 
-def _links_images_line(pages: list[ReportPage]) -> Figure:
+def _links_images_line(pages: list[ReportPage], theme: ReportTheme) -> Figure:
+    primary, accent = _colors(theme)
     figure = _figure(WIDE_SIZE_MM)
     axes = figure.add_subplot()
     positions = [page.position for page in pages]
     series = (
-        ("Links", [page.link_count for page in pages], PRIMARY),
-        ("Images", [page.image_count for page in pages], ACCENT),
+        ("Links", [page.link_count for page in pages], primary),
+        ("Images", [page.image_count for page in pages], accent),
     )
 
     for label, values, color in series:

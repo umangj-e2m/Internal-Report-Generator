@@ -6,6 +6,8 @@
   --border: #e5e7eb;
   --surface: #f7f8fb;
   --surface-strong: #eef0f6;
+  --font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-scale: 1;
 }
 
 * {
@@ -15,7 +17,7 @@
 body {
   margin: 0;
   background: #eceff4;
-  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--font-family);
   color: var(--text);
 }
 
@@ -36,10 +38,11 @@ body {
   overflow: hidden;
   background: #ffffff;
   border-radius: 10px;
-  box-shadow: 0 6px 24px rgba(27, 35, 64, 0.12);
+  box-shadow: 0 6px 24px color-mix(in srgb, var(--primary) 12%, transparent);
   container-type: inline-size;
   --in: calc(100cqw / 13.333);
   --pt: calc(100cqw / 13.333 / 72);
+  --fpt: calc(var(--pt) * var(--font-scale));
 }
 
 .el {
@@ -170,18 +173,18 @@ body {
 }
 
 .meta {
-  line-height: calc(var(--pt) * 16);
+  line-height: calc(var(--fpt) * 16);
 }
 
 .body-text {
-  line-height: calc(var(--in) * 0.25);
+  line-height: calc(var(--in) * 0.25 * var(--font-scale));
 }
 
 /* ---------- Summary table ---------- */
 .summary-table {
   border-collapse: collapse;
   table-layout: fixed;
-  font-size: calc(var(--pt) * 10.5);
+  font-size: calc(var(--fpt) * 10.5);
 }
 
 .summary-table th,
@@ -192,7 +195,7 @@ body {
 }
 
 .summary-table th {
-  font-size: calc(var(--pt) * 11);
+  font-size: calc(var(--fpt) * 11);
   color: #ffffff;
   background: var(--primary);
 }
@@ -222,14 +225,14 @@ body {
 .summary-table .cell-url {
   display: block;
   overflow: hidden;
-  font-size: calc(var(--pt) * 9);
+  font-size: calc(var(--fpt) * 9);
   color: var(--muted);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 .summary-table .cell-description {
-  font-size: calc(var(--pt) * 10);
+  font-size: calc(var(--fpt) * 10);
 }
 
 .summary-table .total td {

@@ -7,6 +7,7 @@ from pathlib import Path
 from config import get_settings
 from models.db import Report
 from services.exports.charts import build_charts, build_page_chart
+from services.exports.themes import theme_for
 from services.reports.helpers import share_url
 from services.shared.constants import REPORT_TITLE
 from utils.dates import format_display, utcnow
@@ -61,14 +62,16 @@ def page_description(page, max_chars: int = SUMMARY_TABLE_DESCRIPTION_CHARS) -> 
 
 def build_context(report: Report) -> dict:
     settings = get_settings()
+    theme = theme_for(report)
     return {
         "report_title": REPORT_TITLE,
         "brand_name": settings.report_brand_name,
         "report": report,
         "pages": report.pages,
+        "theme": theme,
         "totals": compute_totals(report),
         "charts": build_charts(report, "svg"),
-        "page_chart": lambda page: build_page_chart(page, "svg"),
+        "page_chart": lambda page: build_page_chart(page, "svg", theme),
         "created_at": format_display(report.created_at, settings.report_timezone),
         "generated_at": generated_at_label(),
         "share_url": share_url(report.slug),

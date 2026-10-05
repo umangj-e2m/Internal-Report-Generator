@@ -1,3 +1,4 @@
+from contextvars import ContextVar
 from io import BytesIO
 
 from pptx import Presentation
@@ -19,32 +20,48 @@ from services.exports.slides import (
     SLIDE_HEIGHT,
     SLIDE_WIDTH,
     TEXT_BOX_PADDING,
-    TEXT_LINE_HEIGHT,
     Slide,
     SlideDeck,
     build_deck,
+    text_line_height,
 )
-from services.shared.constants import BRAND_ACCENT_HEX, BRAND_MUTED_HEX, BRAND_PRIMARY_HEX
+from services.exports.themes import (
+    BORDER_HEX,
+    DEFAULT_THEME,
+    MUTED_HEX,
+    SURFACE_HEX,
+    SURFACE_STRONG_HEX,
+    TEXT_HEX,
+    WHITE_HEX,
+    ReportTheme,
+)
 
-PRIMARY = BRAND_PRIMARY_HEX
-ACCENT = BRAND_ACCENT_HEX
-MUTED = BRAND_MUTED_HEX
-TEXT = "1F2937"
-WHITE = "FFFFFF"
-BORDER = "E5E7EB"
-SURFACE = "F7F8FB"
-SURFACE_STRONG = "EEF0F6"
-TAG_H2 = "5B6275"
-FONT_NAME = "Segoe UI"
+MUTED = MUTED_HEX
+TEXT = TEXT_HEX
+WHITE = WHITE_HEX
+BORDER = BORDER_HEX
+SURFACE = SURFACE_HEX
+SURFACE_STRONG = SURFACE_STRONG_HEX
+TAG_H2 = MUTED_HEX
 EMU_PER_INCH = 914_400
 NO_STYLE_TABLE_ID = "{2D5ABB26-0587-4C30-8999-92F81FD0307C}"
 CARD_RADIUS = 0.08
 BADGE_RADIUS = 0.1
 TAG_RADIUS = 0.05
 
+_theme: ContextVar[ReportTheme] = ContextVar("pptx_theme", default=DEFAULT_THEME)
+
 
 def render_report_pptx(report: Report) -> bytes:
     deck = build_deck(report, "png")
+    token = _theme.set(deck.theme)
+    try:
+        return _render(deck)
+    finally:
+        _theme.reset(token)
+
+
+def _render(deck: SlideDeck) -> bytes:
     presentation = Presentation()
     presentation.slide_width = _in(SLIDE_WIDTH)
     presentation.slide_height = _in(SLIDE_HEIGHT)
@@ -65,18 +82,18 @@ def render_report_pptx(report: Report) -> bytes:
 
 # ---------- Slides ----------
 def _title_slide(slide, deck: SlideDeck, _: Slide) -> None:
-    _rect(slide, L.TITLE_STRIP, PRIMARY)
+    _rect(slide, L.TITLE_STRIP, _primary())
     _logo(slide, L.TITLE_LOGO)
-    _text(slide, L.TITLE_EYEBROW, deck.report_title.upper(), 13, bold=True, color=ACCENT,
+    _text(slide, L.TITLE_EYEBROW, deck.report_title.upper(), 13, bold=True, color=_accent(),
           letter_spacing=2)
-    _text(slide, L.TITLE_SITE, deck.site_name, 44, bold=True, color=PRIMARY)
+    _text(slide, L.TITLE_SITE, deck.site_name, 44, bold=True, color=_primary())
     _text(slide, L.TITLE_URL, deck.source_url, 16, color=MUTED)
-    _rect(slide, L.TITLE_BAR, ACCENT)
+    _rect(slide, L.TITLE_BAR, _accent())
     plural = "s" if deck.page_count != 1 else ""
     _text(slide, L.TITLE_META,
           f"Generated {deck.generated_at}   ·   {deck.page_count} page{plural} analysed", 13,
           color=MUTED)
-    _text(slide, L.TITLE_BRAND, deck.brand_name, 12, bold=True, color=PRIMARY)
+    _text(slide, L.TITLE_BRAND, deck.brand_name, 12, bold=True, color=_primary())
 
 
 def _overview_slide(slide, deck: SlideDeck, item: Slide) -> None:
@@ -93,7 +110,7 @@ def _overview_slide(slide, deck: SlideDeck, item: Slide) -> None:
         _text(slide, (x + 0.25, L.METRIC_TOP + 0.27, L.METRIC_WIDTH - 0.4, 0.3), label.upper(),
               11, color=MUTED, letter_spacing=0.8)
         _text(slide, (x + 0.25, L.METRIC_TOP + 0.6, L.METRIC_WIDTH - 0.4, 0.55), value, 30,
-              bold=True, color=PRIMARY)
+              bold=True, color=_primary())
 
     x, y, width, height = L.DETAILS
     _rect(slide, L.DETAILS, SURFACE, radius=CARD_RADIUS)
@@ -106,7 +123,7 @@ def _overview_slide(slide, deck: SlideDeck, item: Slide) -> None:
         row_y = y + L.DETAILS_ROW_TOP + index * L.DETAILS_ROW_STEP
         _text(slide, (x + L.DETAILS_LABEL_X, row_y, 2.7, 0.32), label, 14, bold=True, color=MUTED)
         _text(slide, (x + L.DETAILS_VALUE_X, row_y, width - L.DETAILS_VALUE_X - 0.3, 0.32), value,
-              14, color=PRIMARY if index == 2 else TEXT)
+              14, color=_primary() if index == 2 else TEXT)
 
 
 def _summary_slide(slide, deck: SlideDeck, item: Slide) -> None:
@@ -129,7 +146,7 @@ def _summary_slide(slide, deck: SlideDeck, item: Slide) -> None:
     table.rows[0].height = _in(L.TABLE_HEADER_HEIGHT)
     for index, text in enumerate(headers):
         cell = table.cell(0, index)
-        _cell(cell, fill=PRIMARY)
+        _cell(cell, fill=_primary())
         _cell_text(cell, text, 11, bold=True, color=WHITE, align=_column_align(index))
 
     for row_index, row in enumerate(rows, start=1):
@@ -143,7 +160,7 @@ def _summary_slide(slide, deck: SlideDeck, item: Slide) -> None:
             if value is not None:
                 _cell_text(cell, value, 10 if index == 2 else 10.5, align=_column_align(index))
         page_cell = table.cell(row_index, 1)
-        _cell_text(page_cell, row["title"], 10.5, bold=True, color=PRIMARY)
+        _cell_text(page_cell, row["title"], 10.5, bold=True, color=_primary())
         _add_paragraph(page_cell.text_frame, row["url"], 9, color=MUTED)
 
     if show_total:
@@ -153,10 +170,10 @@ def _summary_slide(slide, deck: SlideDeck, item: Slide) -> None:
                   f"{deck.totals.images:,}")
         for index, value in enumerate(totals):
             cell = table.cell(last, index)
-            _cell(cell, fill=SURFACE_STRONG, top=PRIMARY)
+            _cell(cell, fill=SURFACE_STRONG, top=_primary())
             if value:
                 align = PP_ALIGN.LEFT if index == 0 else _column_align(index)
-                _cell_text(cell, value, 10.5, bold=True, color=PRIMARY, align=align)
+                _cell_text(cell, value, 10.5, bold=True, color=_primary(), align=align)
         table.cell(last, 0).merge(table.cell(last, 2))
 
 
@@ -175,15 +192,16 @@ def _page_slide(slide, _: SlideDeck, item: Slide) -> None:
         _text(slide, (x + 0.2, L.STAT_TOP + 0.16, width - 0.3, 0.26), label.upper(), 10,
               bold=True, color=MUTED, letter_spacing=0.8)
         _text(slide, (x + 0.2, L.STAT_TOP + 0.45, width - 0.3, 0.38), value, 18,
-              bold=True, color=PRIMARY, wrap=False)
+              bold=True, color=_primary(), wrap=False)
 
     if data["chart"]:
-        _text(slide, L.BREAKDOWN_TITLE, data["chart"].title, 13, bold=True, color=PRIMARY)
+        _text(slide, L.BREAKDOWN_TITLE, data["chart"].title, 13, bold=True, color=_primary())
         _picture(slide, data["chart"].image, L.BREAKDOWN_IMAGE)
     if data["meta"] or data["meta_note"]:
-        _text(slide, L.META_TITLE, "Meta description", 13, bold=True, color=PRIMARY)
+        _text(slide, L.META_TITLE, "Meta description", 13, bold=True, color=_primary())
         _text(slide, L.META_TEXT, data["meta"] or data["meta_note"], 11,
-              color=TEXT if data["meta"] else MUTED, italic=not data["meta"], line_height=16)
+              color=TEXT if data["meta"] else MUTED, italic=not data["meta"],
+              line_height=_theme.get().pt(16))
 
 
 def _page_content_slide(slide, _: SlideDeck, item: Slide) -> None:
@@ -192,7 +210,7 @@ def _page_content_slide(slide, _: SlideDeck, item: Slide) -> None:
     for section in data["sections"]:
         top = BODY_TOP + section["top"]
         _text(slide, (MARGIN_X, top, CONTENT_WIDTH, 0.32), section["title"], 13, bold=True,
-              color=PRIMARY)
+              color=_primary())
         body_top = BODY_TOP + section["body_top"]
         if section["kind"] == "headings":
             _heading_rows(slide, section, body_top)
@@ -202,11 +220,11 @@ def _page_content_slide(slide, _: SlideDeck, item: Slide) -> None:
 
 def _closing_slide(slide, deck: SlideDeck, _: Slide) -> None:
     _logo(slide, L.CLOSING_LOGO)
-    _text(slide, L.CLOSING_TITLE, "Thank you", 40, bold=True, color=PRIMARY, align=PP_ALIGN.CENTER)
-    _rect(slide, L.CLOSING_BAR, ACCENT)
+    _text(slide, L.CLOSING_TITLE, "Thank you", 40, bold=True, color=_primary(), align=PP_ALIGN.CENTER)
+    _rect(slide, L.CLOSING_BAR, _accent())
     _text(slide, L.CLOSING_LEAD, "View the full report online", 14, color=MUTED,
           align=PP_ALIGN.CENTER)
-    _text(slide, L.CLOSING_LINK, deck.share_url, 15, bold=True, color=PRIMARY,
+    _text(slide, L.CLOSING_LINK, deck.share_url, 15, bold=True, color=_primary(),
           align=PP_ALIGN.CENTER)
     _text(slide, L.CLOSING_NOTE, f"{deck.brand_name}   ·   Generated {deck.generated_at}", 11,
           color=MUTED, align=PP_ALIGN.CENTER)
@@ -226,9 +244,9 @@ _BUILDERS = {
 # ---------- Shared pieces ----------
 def _chrome(slide, deck: SlideDeck, item: Slide) -> None:
     _logo(slide, L.HEADER_LOGO)
-    _text(slide, L.HEADER_BRAND, deck.brand_name, 12, bold=True, color=PRIMARY,
+    _text(slide, L.HEADER_BRAND, deck.brand_name, 12, bold=True, color=_primary(),
           anchor=MSO_ANCHOR.MIDDLE)
-    _text(slide, L.HEADER_SITE, deck.site_name, 11, bold=True, color=PRIMARY,
+    _text(slide, L.HEADER_SITE, deck.site_name, 11, bold=True, color=_primary(),
           align=PP_ALIGN.RIGHT, anchor=MSO_ANCHOR.MIDDLE)
     _line(slide, MARGIN_X, L.HEADER_LINE_Y, L.RIGHT_EDGE, BORDER)
     _line(slide, MARGIN_X, L.FOOTER_LINE_Y, L.RIGHT_EDGE, BORDER)
@@ -239,23 +257,23 @@ def _chrome(slide, deck: SlideDeck, item: Slide) -> None:
 
 
 def _slide_title(slide, title: str) -> None:
-    _text(slide, L.SLIDE_TITLE, title, 24, bold=True, color=PRIMARY, anchor=MSO_ANCHOR.MIDDLE)
-    _rect(slide, L.SLIDE_TITLE_BAR, ACCENT)
+    _text(slide, L.SLIDE_TITLE, title, 24, bold=True, color=_primary(), anchor=MSO_ANCHOR.MIDDLE)
+    _rect(slide, L.SLIDE_TITLE_BAR, _accent())
 
 
 def _page_heading(slide, data: dict) -> None:
-    badge = _rect(slide, L.PAGE_BADGE, PRIMARY, radius=BADGE_RADIUS)
+    badge = _rect(slide, L.PAGE_BADGE, _primary(), radius=BADGE_RADIUS)
     _shape_text(badge, f"{data['position']:02d}", 18, bold=True, color=WHITE)
-    _text(slide, L.PAGE_TITLE, data["title"], 20, bold=True, color=PRIMARY,
+    _text(slide, L.PAGE_TITLE, data["title"], 20, bold=True, color=_primary(),
           anchor=MSO_ANCHOR.MIDDLE, wrap=False)
     _text(slide, L.PAGE_URL, data["url"], 11, color=MUTED, anchor=MSO_ANCHOR.MIDDLE, wrap=False)
-    _rect(slide, L.PAGE_RULE, ACCENT)
+    _rect(slide, L.PAGE_RULE, _accent())
 
 
 def _card(slide, box) -> None:
     x, y, width, _ = box
     _rect(slide, box, SURFACE, line=BORDER, radius=CARD_RADIUS)
-    _rect(slide, (x + CARD_RADIUS, y, width - 2 * CARD_RADIUS, 0.05), ACCENT)
+    _rect(slide, (x + CARD_RADIUS, y, width - 2 * CARD_RADIUS, 0.05), _accent())
 
 
 def _heading_rows(slide, section: dict, body_top: float) -> None:
@@ -268,7 +286,7 @@ def _heading_rows(slide, section: dict, body_top: float) -> None:
         indent = L.H2_INDENT if heading["level"] == 2 else 0.0
         tag = _rect(slide, (MARGIN_X + indent, row_y + (HEADING_ROW_HEIGHT - tag_height) / 2,
                             tag_width, tag_height),
-                    ACCENT if heading["level"] == 1 else TAG_H2, radius=TAG_RADIUS)
+                    _accent() if heading["level"] == 1 else TAG_H2, radius=TAG_RADIUS)
         _shape_text(tag, f"H{heading['level']}", 8, bold=True, color=WHITE)
         text_x = MARGIN_X + indent + L.HEADING_TEXT_OFFSET
         _text(slide, (text_x, row_y, L.RIGHT_EDGE - text_x, HEADING_ROW_HEIGHT), heading["text"],
@@ -279,10 +297,10 @@ def _heading_rows(slide, section: dict, body_top: float) -> None:
 def _text_box(slide, section: dict, body_top: float) -> None:
     height = section["body_height"]
     _rect(slide, (MARGIN_X, body_top, CONTENT_WIDTH, height), SURFACE)
-    _rect(slide, (MARGIN_X, body_top, L.TEXT_BAR_WIDTH, height), ACCENT)
+    _rect(slide, (MARGIN_X, body_top, L.TEXT_BAR_WIDTH, height), _accent())
     _text(slide, (MARGIN_X + L.TEXT_INSET_X, body_top + TEXT_BOX_PADDING,
                   CONTENT_WIDTH - 2 * L.TEXT_INSET_X, height - 2 * TEXT_BOX_PADDING),
-          section["text"], 12, line_height=TEXT_LINE_HEIGHT * 72)
+          section["text"], 12, line_height=text_line_height(_theme.get()) * 72)
 
 
 # ---------- Low-level helpers ----------
@@ -294,9 +312,18 @@ def _rgb(hex_value: str) -> RGBColor:
     return RGBColor.from_string(hex_value)
 
 
+def _primary() -> str:
+    return _theme.get().primary
+
+
+def _accent() -> str:
+    return _theme.get().accent
+
+
 def _font(font, size: float, bold: bool, color: str, italic: bool = False) -> None:
-    font.name = FONT_NAME
-    font.size = Pt(size)
+    theme = _theme.get()
+    font.name = theme.font_name
+    font.size = Pt(theme.pt(size))
     font.bold = bold
     font.italic = italic
     font.color.rgb = _rgb(color)

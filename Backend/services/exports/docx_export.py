@@ -1,3 +1,4 @@
+from contextvars import ContextVar
 from io import BytesIO
 
 from docx import Document
@@ -15,22 +16,23 @@ from config import get_settings
 from models.db import Report, ReportPage
 from services.exports.charts import ReportChart, build_charts, build_page_chart
 from services.exports.helpers import compute_totals, generated_at_label, logo_path, page_description
-from services.reports.helpers import share_url
-from services.shared.constants import (
-    BRAND_ACCENT_HEX,
-    BRAND_MUTED_HEX,
-    BRAND_PRIMARY_HEX,
-    REPORT_TITLE,
+from services.exports.themes import (
+    BORDER_HEX,
+    DEFAULT_THEME,
+    MUTED_HEX,
+    SURFACE_HEX,
+    SURFACE_STRONG_HEX,
+    TEXT_HEX,
+    WHITE_HEX,
+    ReportTheme,
+    theme_for,
 )
+from services.reports.helpers import share_url
+from services.shared.constants import REPORT_TITLE
 from utils.dates import format_display
 
-PRIMARY = RGBColor.from_string(BRAND_PRIMARY_HEX)
-ACCENT = RGBColor.from_string(BRAND_ACCENT_HEX)
-MUTED = RGBColor.from_string(BRAND_MUTED_HEX)
-WHITE = RGBColor.from_string("FFFFFF")
-BORDER_HEX = "E5E7EB"
-SURFACE_HEX = "F7F8FB"
-SURFACE_STRONG_HEX = "EEF0F6"
+MUTED = RGBColor.from_string(MUTED_HEX)
+WHITE = RGBColor.from_string(WHITE_HEX)
 
 PAGE_WIDTH = Mm(210)
 PAGE_HEIGHT = Mm(297)
@@ -39,7 +41,6 @@ CONTENT_WIDTH = Emu(PAGE_WIDTH - 2 * SIDE_MARGIN)
 SUMMARY_COLUMN_WIDTHS = (Mm(9), Mm(54), Mm(70), Mm(15), Mm(13), Mm(17))
 HEADER_COLUMN_WIDTHS = (Mm(12), Mm(80), Emu(CONTENT_WIDTH - Mm(92)))
 METRIC_GAP = Mm(3.5)
-FONT_NAME = "Segoe UI"
 METRIC_CARD_HEIGHT = Mm(17.5)
 DETAILS_BOX_HEIGHT = Mm(27)
 DETAILS_BOX_RADIUS = 7_000
@@ -50,13 +51,15 @@ TAG_RADIUS = 19_000
 TAG_BASELINE_SHIFT_HALF_PT = -5
 SUMMARY_PADDING = (150, 150, 180, 180)  # top, bottom, left, right in dxa (7.5pt / 9pt)
 METRIC_CARD_RADIUS = 10_000  # DrawingML roundRect "adj": 1/100000 of the shorter side
-METRIC_ACCENT_PCT = 5_000  # orange top band as 1/100000 of the card height (~3px)
+METRIC_ACCENT_PCT = 5_000  # accent top band as 1/100000 of the card height (~3px)
 PAGE_BADGE_SIZE = (Mm(11), Mm(8.5))
 PAGE_BADGE_RADIUS = 18_000
 PAGE_BADGE_WIDTH = Mm(14)
 PAGE_TITLE_TOP_SPACE = Pt(12)
 HEADING_H2_INDENT = Mm(4.8)
 WPS_NS = "http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+
+_theme: ContextVar[ReportTheme] = ContextVar("docx_theme", default=DEFAULT_THEME)
 
 # OOXML requires child elements in schema order; these are the siblings that must come after.
 _PPR_AFTER_PBDR = (
@@ -85,6 +88,14 @@ _TBLPR_AFTER_CELL_MARGINS = ("w:tblLook", "w:tblCaption", "w:tblDescription", "w
 
 
 def render_report_docx(report: Report) -> bytes:
+    token = _theme.set(theme_for(report))
+    try:
+        return _render(report)
+    finally:
+        _theme.reset(token)
+
+
+def _render(report: Report) -> bytes:
     doc = Document()
     _setup_styles(doc)
 
@@ -117,35 +128,37 @@ def _setup_page(section: Section) -> None:
 
 
 def _setup_styles(doc: DocxDocument) -> None:
+    theme = _theme.get()
     normal = doc.styles["Normal"]
     _set_style_font(normal)
-    normal.font.size = Pt(10.5)
-    normal.font.color.rgb = RGBColor.from_string("1F2937")
+    normal.font.size = Pt(theme.pt(10.5))
+    normal.font.color.rgb = RGBColor.from_string(TEXT_HEX)
     normal.paragraph_format.space_after = Pt(6)
     normal.paragraph_format.line_spacing = 1.15
 
     heading1 = doc.styles["Heading 1"]
     _set_style_font(heading1)
-    heading1.font.size = Pt(15)
+    heading1.font.size = Pt(theme.pt(15))
     heading1.font.bold = True
-    heading1.font.color.rgb = PRIMARY
+    heading1.font.color.rgb = _primary()
     heading1.paragraph_format.space_before = Pt(0)
     heading1.paragraph_format.space_after = Pt(6)
 
     heading2 = doc.styles["Heading 2"]
     _set_style_font(heading2)
-    heading2.font.size = Pt(11.5)
+    heading2.font.size = Pt(theme.pt(11.5))
     heading2.font.bold = True
-    heading2.font.color.rgb = PRIMARY
+    heading2.font.color.rgb = _primary()
     heading2.paragraph_format.space_before = Pt(12)
     heading2.paragraph_format.space_after = Pt(4)
 
 
 def _set_style_font(style) -> None:
-    style.font.name = FONT_NAME
+    font_name = _theme.get().font_name
+    style.font.name = font_name
     r_fonts = style.element.rPr.rFonts
-    r_fonts.set(qn("w:eastAsia"), FONT_NAME)
-    r_fonts.set(qn("w:cs"), FONT_NAME)
+    r_fonts.set(qn("w:eastAsia"), font_name)
+    r_fonts.set(qn("w:cs"), font_name)
     # Built-in styles point at theme fonts, which take precedence over explicit names.
     for attribute in ("w:asciiTheme", "w:hAnsiTheme", "w:eastAsiaTheme", "w:cstheme"):
         r_fonts.attrib.pop(qn(attribute), None)
@@ -175,7 +188,7 @@ def _build_header(section: Section, site_name: str) -> None:
     if logo:
         logo_cell.paragraphs[0].add_run().add_picture(str(logo), width=Mm(9), height=Mm(9))
     _run(brand_cell.paragraphs[0], get_settings().report_brand_name, size=10, bold=True,
-         color=PRIMARY)
+         color=_primary())
 
     title_line = title_cell.paragraphs[0]
     title_line.alignment = WD_ALIGN_PARAGRAPH.RIGHT
@@ -184,7 +197,7 @@ def _build_header(section: Section, site_name: str) -> None:
     site_line.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     site_line.paragraph_format.space_after = Pt(0)
     site_line.paragraph_format.line_spacing = 1.0
-    _run(site_line, site_name, size=8, bold=True, color=PRIMARY)
+    _run(site_line, site_name, size=8, bold=True, color=_primary())
 
 
 def _build_footer(section: Section, site_name: str) -> None:
@@ -207,11 +220,11 @@ def _build_cover(doc: DocxDocument, report: Report) -> None:
 
     eyebrow = doc.add_paragraph()
     eyebrow.paragraph_format.space_after = Pt(2)
-    _letter_spacing(_run(eyebrow, REPORT_TITLE.upper(), size=8.5, bold=True, color=ACCENT), 1.2)
+    _letter_spacing(_run(eyebrow, REPORT_TITLE.upper(), size=8.5, bold=True, color=_accent()), 1.2)
 
     title = doc.add_paragraph()
     title.paragraph_format.space_after = Pt(2)
-    _run(title, report.site_name, size=24, bold=True, color=PRIMARY)
+    _run(title, report.site_name, size=24, bold=True, color=_primary())
 
     url = doc.add_paragraph()
     url.paragraph_format.space_after = Pt(12)
@@ -239,14 +252,14 @@ def _build_cover(doc: DocxDocument, report: Report) -> None:
             holder,
             width=card_width,
             height=METRIC_CARD_HEIGHT,
-            fill=_accent_top_fill(SURFACE_HEX, BRAND_ACCENT_HEX, METRIC_ACCENT_PCT),
+            fill=_accent_top_fill(SURFACE_HEX, _theme.get().accent, METRIC_ACCENT_PCT),
             outline=BORDER_HEX,
             radius=METRIC_CARD_RADIUS,
             insets=(Mm(3.2), Mm(3.2), Mm(3.2), Mm(2)),
             paragraphs=2,
         )
         _letter_spacing(_run(label_paragraph, label.upper(), size=8, color=MUTED), 0.5)
-        _run(value_paragraph, value, size=16, bold=True, color=PRIMARY)
+        _run(value_paragraph, value, size=16, bold=True, color=_primary())
 
     _spacer(doc)
     details = [
@@ -278,7 +291,7 @@ def _build_cover(doc: DocxDocument, report: Report) -> None:
 def _build_summary(doc: DocxDocument, report: Report) -> None:
     totals = compute_totals(report)
     heading = doc.add_heading("Summary", level=1)
-    _set_paragraph_border(heading, "bottom", BRAND_ACCENT_HEX, size=12)
+    _set_paragraph_border(heading, "bottom", _theme.get().accent, size=12)
 
     plural = "s" if report.page_count != 1 else ""
     lead = doc.add_paragraph()
@@ -294,7 +307,7 @@ def _build_summary(doc: DocxDocument, report: Report) -> None:
     header_row = table.rows[0]
     _repeat_as_header(header_row)
     for index, (cell, text) in enumerate(zip(header_row.cells, headers)):
-        _shade(cell, BRAND_PRIMARY_HEX)
+        _shade(cell, _theme.get().primary)
         _run(cell.paragraphs[0], text, size=9, bold=True, color=WHITE)
         _align_numeric(cell, index)
 
@@ -317,18 +330,18 @@ def _build_summary(doc: DocxDocument, report: Report) -> None:
             _align_numeric(cell, index)
         page_cell = cells[1].paragraphs[0]
         page_cell.paragraph_format.space_after = Pt(0)
-        _run(page_cell, page.title, size=9, bold=True, color=PRIMARY)
+        _run(page_cell, page.title, size=9, bold=True, color=_primary())
         _run(cells[1].add_paragraph(), page.url, size=7.5, color=MUTED)
 
     total_cells = table.add_row().cells
     merged = total_cells[0].merge(total_cells[2])
-    _run(merged.paragraphs[0], "Total", size=9, bold=True, color=PRIMARY)
+    _run(merged.paragraphs[0], "Total", size=9, bold=True, color=_primary())
     for index, value in ((3, totals.words), (4, totals.links), (5, totals.images)):
-        _run(total_cells[index].paragraphs[0], f"{value:,}", size=9, bold=True, color=PRIMARY)
+        _run(total_cells[index].paragraphs[0], f"{value:,}", size=9, bold=True, color=_primary())
         _align_numeric(total_cells[index], index)
     for cell in table.rows[-1].cells:
         _shade(cell, SURFACE_STRONG_HEX)
-        _set_cell_border(cell, "top", BRAND_PRIMARY_HEX, size=12)
+        _set_cell_border(cell, "top", _theme.get().primary, size=12)
 
     _set_column_widths(table, SUMMARY_COLUMN_WIDTHS, skip_last_row=True)
     merged.width = Emu(sum(SUMMARY_COLUMN_WIDTHS[:3]))
@@ -344,7 +357,7 @@ def _build_charts(doc: DocxDocument, report: Report) -> None:
     heading = doc.add_heading("Charts", level=1)
     heading.paragraph_format.space_before = Pt(20)
     heading.paragraph_format.keep_with_next = True
-    _set_paragraph_border(heading, "bottom", BRAND_ACCENT_HEX, size=12)
+    _set_paragraph_border(heading, "bottom", _theme.get().accent, size=12)
     lead = doc.add_paragraph()
     lead.paragraph_format.keep_with_next = True
     _run(lead, "A visual comparison of the pages read from this website.", color=MUTED)
@@ -353,7 +366,7 @@ def _build_charts(doc: DocxDocument, report: Report) -> None:
         title = doc.add_paragraph()
         title.paragraph_format.space_after = Pt(1)
         title.paragraph_format.keep_with_next = True
-        _run(title, chart.title, size=11, bold=True, color=PRIMARY)
+        _run(title, chart.title, size=11, bold=True, color=_primary())
         _add_chart_image(doc, chart, CONTENT_WIDTH)
         doc.add_paragraph().paragraph_format.space_after = Pt(8)
 
@@ -384,7 +397,7 @@ def _build_page_section(doc: DocxDocument, page: ReportPage) -> None:
     )
     badge_cell, title_cell = heading_table.rows[0].cells
     for cell in (badge_cell, title_cell):
-        _set_cell_border(cell, "bottom", BRAND_ACCENT_HEX, size=12)
+        _set_cell_border(cell, "bottom", _theme.get().accent, size=12)
 
     holder = badge_cell.paragraphs[0]
     _tighten(holder)
@@ -392,7 +405,7 @@ def _build_page_section(doc: DocxDocument, page: ReportPage) -> None:
         holder,
         width=PAGE_BADGE_SIZE[0],
         height=PAGE_BADGE_SIZE[1],
-        fill=_solid_fill(BRAND_PRIMARY_HEX),
+        fill=_solid_fill(_theme.get().primary),
         outline=None,
         radius=PAGE_BADGE_RADIUS,
         insets=(0, 0, 0, 0),
@@ -404,7 +417,7 @@ def _build_page_section(doc: DocxDocument, page: ReportPage) -> None:
     title = title_cell.paragraphs[0]
     title.style = "Heading 1"
     title.paragraph_format.space_after = Pt(2)
-    _run(title, page.title, size=15, bold=True, color=PRIMARY)
+    _run(title, page.title, size=15, bold=True, color=_primary())
     url = title_cell.add_paragraph()
     url.paragraph_format.space_after = Pt(0)
     _run(url, page.url, size=9, color=MUTED)
@@ -422,9 +435,9 @@ def _build_page_section(doc: DocxDocument, page: ReportPage) -> None:
         _shade(cell, SURFACE_STRONG_HEX)
         _letter_spacing(_run(cell.paragraphs[0], label.upper(), size=8, bold=True, color=MUTED), 0.5)
     for cell, (_, value) in zip(table.rows[1].cells, stats):
-        _run(cell.paragraphs[0], value, size=11, bold=True, color=PRIMARY)
+        _run(cell.paragraphs[0], value, size=11, bold=True, color=_primary())
 
-    breakdown = build_page_chart(page, "png")
+    breakdown = build_page_chart(page, "png", _theme.get())
     if breakdown:
         doc.add_heading(breakdown.title, level=2).paragraph_format.keep_with_next = True
         _add_chart_image(doc, breakdown, CONTENT_WIDTH)
@@ -450,7 +463,7 @@ def _build_page_section(doc: DocxDocument, page: ReportPage) -> None:
             _set_paragraph_border(line, "between", BORDER_HEX, size=6, space=3, style="dashed")
             if level > 1:
                 line.add_run("\t")
-            _tag(line, f"H{level}", BRAND_ACCENT_HEX if level == 1 else BRAND_MUTED_HEX)
+            _tag(line, f"H{level}", _theme.get().accent if level == 1 else MUTED_HEX)
             _run(line, "  " + item.get("text", ""))
     else:
         _run(doc.add_paragraph(), "No H1 or H2 headings were found on this page.", italic=True, color=MUTED)
@@ -461,7 +474,7 @@ def _build_page_section(doc: DocxDocument, page: ReportPage) -> None:
     _set_table_borders(box, None, margins=SUMMARY_PADDING)
     cell = box.rows[0].cells[0]
     _shade(cell, SURFACE_HEX)
-    _set_cell_border(cell, "left", BRAND_ACCENT_HEX, size=18)
+    _set_cell_border(cell, "left", _theme.get().accent, size=18)
     summary = cell.paragraphs[0]
     summary.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     summary.paragraph_format.space_after = Pt(0)
@@ -470,11 +483,19 @@ def _build_page_section(doc: DocxDocument, page: ReportPage) -> None:
 
 
 # ---------- Low-level helpers ----------
+def _primary() -> RGBColor:
+    return RGBColor.from_string(_theme.get().primary)
+
+
+def _accent() -> RGBColor:
+    return RGBColor.from_string(_theme.get().accent)
+
+
 def _run(paragraph: Paragraph, text: str, size: float | None = None, bold: bool = False,
          italic: bool = False, color: RGBColor | None = None):
     run = paragraph.add_run(text)
     if size:
-        run.font.size = Pt(size)
+        run.font.size = Pt(_theme.get().pt(size))
     run.font.bold = bold
     run.font.italic = italic
     if color is not None:

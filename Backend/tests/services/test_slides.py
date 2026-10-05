@@ -55,6 +55,21 @@ def test_long_summary_is_split_without_losing_words(sample_report):
                        for s in slide.data["sections"])
 
 
+def test_larger_text_needs_more_content_slides(sample_report):
+    page = sample_report.pages[0]
+    page.summary = " ".join(f"word{index}" for index in range(1500))
+
+    def summary_parts(size: str) -> list[dict]:
+        sample_report.font_size = size
+        deck = build_deck(sample_report, "png")
+        return [s for s in _page_content(deck, page.position) if s["title"].startswith("Content")]
+
+    small, large = summary_parts("small"), summary_parts("large")
+
+    assert len(large) > len(small)
+    assert " ".join(section["text"] for section in large) == page.summary
+
+
 def test_long_meta_description_moves_to_content_slides(sample_report):
     page = sample_report.pages[0]
     page.meta_description = "Long description " * (META_ON_OVERVIEW_CHARS // 10)

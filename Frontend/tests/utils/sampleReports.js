@@ -9,5 +9,24 @@ export const sampleReport = {
 
 export const sampleReportDetail = {
   ...sampleReport,
+  style: { palette: 'classic', font_family: 'segoe', font_size: 'medium' },
   pages: [],
+};
+
+export const sampleStyleOptions = {
+  palettes: [
+    { key: 'classic', label: 'Classic', primary: '1B2340', accent: 'F26B21' },
+    { key: 'ocean', label: 'Ocean', primary: '0C3B5E', accent: '0E9F9A' },
+    { key: 'berry', label: 'Berry', primary: '3D1E4F', accent: 'D9467A' },
+  ],
+  fonts: [
+    { key: 'segoe', label: 'Segoe UI', css_stack: "'Segoe UI', Arial, sans-serif" },
+    { key: 'georgia', label: 'Georgia', css_stack: 'Georgia, serif' },
+    { key: 'calibri', label: 'Calibri', css_stack: 'Calibri, sans-serif' },
+  ],
+  sizes: [
+    { key: 'small', label: 'Small' },
+    { key: 'medium', label: 'Medium' },
+    { key: 'large', label: 'Large' },
+  ],
 };

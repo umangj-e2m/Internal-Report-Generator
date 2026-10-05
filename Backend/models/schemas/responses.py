@@ -34,8 +34,39 @@ class ReportSummaryOut(BaseModel):
     share_url: str
 
 
+class ReportStyleOut(BaseModel):
+    palette: str
+    font_family: str
+    font_size: str
+
+
 class ReportDetailOut(ReportSummaryOut):
+    style: ReportStyleOut
     pages: list[ReportPageOut]
+
+
+class PaletteOut(BaseModel):
+    key: str
+    label: str
+    primary: str
+    accent: str
+
+
+class FontOut(BaseModel):
+    key: str
+    label: str
+    css_stack: str
+
+
+class SizeOut(BaseModel):
+    key: str
+    label: str
+
+
+class StyleOptionsOut(BaseModel):
+    palettes: list[PaletteOut]
+    fonts: list[FontOut]
+    sizes: list[SizeOut]
 
 
 class ReportListOut(BaseModel):

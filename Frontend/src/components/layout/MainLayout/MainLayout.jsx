@@ -62,6 +62,7 @@ function MainLayout() {
           open={actionsOpen}
           title="Report Tools"
           icon={<HomeRepairServiceOutlinedIcon fontSize="small" />}
+          onExpand={() => setActionsOpen(true)}
         >
           {reportActions}
         </ActionsSidebar>

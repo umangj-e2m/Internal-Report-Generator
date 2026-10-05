@@ -24,7 +24,7 @@ The backend must be running on http://localhost:8000. In development, Vite proxi
 |---|---|
 | `/` | Enter a website URL and generate a report |
 | `/reports` | Search, paginate, view, download (PDF/DOCX/PPT), copy link, delete |
-| `/r/:slug` | Public shareable report page: HTML view / PDF view / Slides tabs and download buttons |
+| `/r/:slug` | Public shareable report page: HTML view / PDF view / Slides tabs; the Report Tools sidebar changes the report's colour palette, font and text size (saved per report) and has the download and share buttons |
 
 The HTML, PDF and slide views are rendered by the backend and shown in an `<iframe>`, so no raw HTML is
 injected into React. The header logo is `public/E2M_Logo-Black.png`; the backend uses the same file for

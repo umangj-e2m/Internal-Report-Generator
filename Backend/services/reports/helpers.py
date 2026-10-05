@@ -7,6 +7,7 @@ from config import get_settings
 from models.db import Report, ReportPage
 from models.domain.scraped_page import ScrapedPage
 from models.schemas.responses import ReportDetailOut, ReportSummaryOut
+from services.exports.themes import theme_for
 from utils.slugs import make_slug
 
 MAX_SLUG_ATTEMPTS = 5
@@ -46,9 +47,17 @@ def to_summary(report: Report) -> ReportSummaryOut:
 
 
 def to_detail(report: Report) -> ReportDetailOut:
-    return ReportDetailOut.model_validate(
-        {**_report_fields(report), "share_url": share_url(report.slug), "pages": report.pages}
-    )
+    theme = theme_for(report)
+    return ReportDetailOut.model_validate({
+        **_report_fields(report),
+        "share_url": share_url(report.slug),
+        "style": {
+            "palette": theme.palette.key,
+            "font_family": theme.font.key,
+            "font_size": theme.size.key,
+        },
+        "pages": report.pages,
+    })
 
 
 def _report_fields(report: Report) -> dict:

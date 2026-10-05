@@ -26,8 +26,10 @@ def render_report_html(report: Report, mode: RenderMode = "web") -> str:
 
 
 def render_slides_html(report: Report) -> str:
+    deck = slide_model.build_deck(report, "svg")
     return _env.get_template("slides.html").render(
-        deck=slide_model.build_deck(report, "svg"),
+        deck=deck,
+        theme=deck.theme,
         L=slide_layout,
         S=slide_model,
         logo_src=logo_data_uri(),

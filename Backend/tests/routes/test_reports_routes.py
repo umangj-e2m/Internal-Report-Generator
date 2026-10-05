@@ -70,6 +70,56 @@ def test_unknown_slug_returns_404(client, suffix):
     assert response.json()["detail"] == "Report 'does-not-exist' was not found."
 
 
+def test_style_options_list_three_of_each_choice(client):
+    response = client.get("/api/reports/style-options")
+
+    assert response.status_code == 200
+    options = response.json()
+    assert [item["key"] for item in options["palettes"]] == ["classic", "ocean", "berry"]
+    assert [item["key"] for item in options["fonts"]] == ["segoe", "georgia", "calibri"]
+    assert [item["key"] for item in options["sizes"]] == ["small", "medium", "large"]
+    assert set(options["palettes"][0]) == {"key", "label", "primary", "accent"}
+
+
+def test_new_report_uses_the_default_style(client):
+    report = _create(client)
+
+    assert report["style"] == {"palette": "classic", "font_family": "segoe", "font_size": "medium"}
+
+
+def test_update_style_is_saved_and_applied_to_the_html(client):
+    created = _create(client)
+    style = {"palette": "berry", "font_family": "calibri", "font_size": "small"}
+
+    response = client.put(f"/api/reports/{created['slug']}/style", json=style)
+
+    assert response.status_code == 200
+    assert response.json()["style"] == style
+    assert client.get(f"/api/reports/{created['slug']}").json()["style"] == style
+    html = client.get(f"/api/reports/{created['slug']}/html").text
+    assert "--primary: #3D1E4F;" in html and "--font-scale: 0.92;" in html
+
+
+def test_update_style_rejects_unknown_choices(client):
+    created = _create(client)
+
+    response = client.put(
+        f"/api/reports/{created['slug']}/style",
+        json={"palette": "neon", "font_family": "segoe", "font_size": "medium"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_update_style_for_unknown_slug_returns_404(client):
+    response = client.put(
+        "/api/reports/does-not-exist/style",
+        json={"palette": "classic", "font_family": "segoe", "font_size": "medium"},
+    )
+
+    assert response.status_code == 404
+
+
 def test_delete_report(client):
     created = _create(client)
 

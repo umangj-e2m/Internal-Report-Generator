@@ -6,6 +6,8 @@
   --border: #e5e7eb;
   --surface: #f7f8fb;
   --surface-strong: #eef0f6;
+  --font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-scale: 1;
 }
 
 * {
@@ -19,8 +21,8 @@ body {
 }
 
 body {
-  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  font-size: 10.5pt;
+  font-family: var(--font-family);
+  font-size: calc(10.5pt * var(--font-scale));
   line-height: 1.55;
   color: var(--text);
   -webkit-print-color-adjust: exact;
@@ -45,7 +47,7 @@ p {
 /* ---------- Cover ---------- */
 .eyebrow {
   margin: 0 0 6px;
-  font-size: 8.5pt;
+  font-size: calc(8.5pt * var(--font-scale));
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -54,7 +56,7 @@ p {
 
 .cover__title {
   margin: 0 0 4px;
-  font-size: 24pt;
+  font-size: calc(24pt * var(--font-scale));
   line-height: 1.2;
   color: var(--primary);
 }
@@ -62,7 +64,7 @@ p {
 .cover__url {
   display: inline-block;
   margin-bottom: 18px;
-  font-size: 10pt;
+  font-size: calc(10pt * var(--font-scale));
   color: var(--muted);
 }
 
@@ -83,7 +85,7 @@ p {
 
 .metric__label {
   display: block;
-  font-size: 8pt;
+  font-size: calc(8pt * var(--font-scale));
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--muted);
@@ -91,7 +93,7 @@ p {
 
 .metric__value {
   display: block;
-  font-size: 16pt;
+  font-size: calc(16pt * var(--font-scale));
   font-weight: 700;
   color: var(--primary);
 }
@@ -123,7 +125,7 @@ p {
 .section-title {
   margin: 0 0 4px;
   padding-bottom: 6px;
-  font-size: 15pt;
+  font-size: calc(15pt * var(--font-scale));
   color: var(--primary);
   border-bottom: 2px solid var(--accent);
 }
@@ -138,7 +140,7 @@ p {
 .stats-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 9pt;
+  font-size: calc(9pt * var(--font-scale));
 }
 
 .data-table thead {
@@ -202,7 +204,7 @@ p {
 
 .cell-url {
   display: block;
-  font-size: 8pt;
+  font-size: calc(8pt * var(--font-scale));
   color: var(--muted);
   word-break: break-all;
 }
@@ -227,7 +229,7 @@ p {
 .stats-table th {
   padding: 6px 10px;
   text-align: left;
-  font-size: 8pt;
+  font-size: calc(8pt * var(--font-scale));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -237,7 +239,7 @@ p {
 
 .stats-table td {
   padding: 8px 10px;
-  font-size: 11pt;
+  font-size: calc(11pt * var(--font-scale));
   font-weight: 600;
   color: var(--primary);
   border-bottom: 1px solid var(--border);
@@ -259,7 +261,7 @@ p {
 .page-heading__number {
   flex: 0 0 auto;
   padding: 4px 10px;
-  font-size: 14pt;
+  font-size: calc(14pt * var(--font-scale));
   font-weight: 700;
   color: #ffffff;
   background: var(--primary);
@@ -268,13 +270,13 @@ p {
 
 .page-heading__title {
   margin: 0 0 2px;
-  font-size: 15pt;
+  font-size: calc(15pt * var(--font-scale));
   line-height: 1.3;
   color: var(--primary);
 }
 
 .page-heading__url {
-  font-size: 9pt;
+  font-size: calc(9pt * var(--font-scale));
   color: var(--muted);
 }
 
@@ -289,7 +291,7 @@ p {
 
 .block__title {
   margin: 0 0 6px;
-  font-size: 11pt;
+  font-size: calc(11pt * var(--font-scale));
   color: var(--primary);
   break-after: avoid-page;
 }
@@ -316,7 +318,7 @@ p {
   flex: 0 0 auto;
   min-width: 26px;
   padding: 0 5px;
-  font-size: 7.5pt;
+  font-size: calc(7.5pt * var(--font-scale));
   font-weight: 700;
   line-height: 16px;
   text-align: center;
@@ -357,13 +359,13 @@ p {
 
 .chart__title {
   margin: 0 0 2px;
-  font-size: 11pt;
+  font-size: calc(11pt * var(--font-scale));
   color: var(--primary);
 }
 
 .chart__caption {
   margin: 0 0 6px;
-  font-size: 9pt;
+  font-size: calc(9pt * var(--font-scale));
   color: var(--muted);
 }
 
@@ -436,7 +438,7 @@ p {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  font-size: 9pt;
+  font-size: calc(9pt * var(--font-scale));
   color: var(--muted);
 }
 
@@ -458,7 +460,7 @@ p {
   justify-content: space-between;
   margin-bottom: 24px;
   padding: 14px 40px;
-  font-size: 9pt;
+  font-size: calc(9pt * var(--font-scale));
   color: var(--muted);
   border-top: 1px solid var(--border);
   border-radius: 0 0 10px 10px;

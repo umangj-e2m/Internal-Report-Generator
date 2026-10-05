@@ -18,6 +18,12 @@ class Report(TimestampMixin, Base):
     source_url: Mapped[str] = mapped_column(String(2048), nullable=False)
     site_name: Mapped[str] = mapped_column(String(255), nullable=False)
     page_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    palette: Mapped[str] = mapped_column(String(20), nullable=False, default="classic",
+                                         server_default="classic")
+    font_family: Mapped[str] = mapped_column(String(20), nullable=False, default="segoe",
+                                             server_default="segoe")
+    font_size: Mapped[str] = mapped_column(String(20), nullable=False, default="medium",
+                                           server_default="medium")
 
     pages: Mapped[list["ReportPage"]] = relationship(
         back_populates="report",

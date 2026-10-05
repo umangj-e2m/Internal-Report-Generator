@@ -1,5 +1,5 @@
 {% macro text(b, content, size, cls="") -%}
-<div class="el text {{ cls }}" style="{{ box(b) }};font-size:calc(var(--pt)*{{ size }})">{{ content }}</div>
+<div class="el text {{ cls }}" style="{{ box(b) }};font-size:calc(var(--fpt)*{{ size }})">{{ content }}</div>
 {%- endmacro %}
 {% macro rect(b, cls) -%}
 <div class="el {{ cls }}" style="{{ box(b) }}"></div>
@@ -11,7 +11,7 @@
 {% if logo_src %}<img class="el" src="{{ logo_src }}" alt="{{ deck.brand_name }} logo" style="{{ box(b) }}" />{% endif %}
 {%- endmacro %}
 {% macro page_heading(data) -%}
-<div class="el badge middle center" style="{{ box(L.PAGE_BADGE) }};font-size:calc(var(--pt)*18)">{{ "%02d" | format(data.position) }}</div>
+<div class="el badge middle center" style="{{ box(L.PAGE_BADGE) }};font-size:calc(var(--fpt)*18)">{{ "%02d" | format(data.position) }}</div>
 {{ text(L.PAGE_TITLE, data.title, 20, "bold primary middle nowrap") }}
 {{ text(L.PAGE_URL, data.url, 11, "muted middle nowrap") }}
 {{ rect(L.PAGE_RULE, "accent-fill") }}
@@ -24,6 +24,7 @@
     <title>{{ deck.site_name }} · Slides</title>
     <style>
       {% include "slides.css" %}
+      {% include "theme.css" %}
     </style>
   </head>
   <body>
@@ -139,7 +140,7 @@
         {% for heading in section["items"] %}
         {% set row_y = body_top + loop.index0 * S.HEADING_ROW_HEIGHT %}
         {% set indent = L.H2_INDENT if heading.level == 2 else 0 %}
-        <div class="el tag tag--h{{ heading.level }} middle center" style="{{ box((S.MARGIN_X + indent, row_y + (S.HEADING_ROW_HEIGHT - L.TAG_SIZE[1]) / 2, L.TAG_SIZE[0], L.TAG_SIZE[1])) }};font-size:calc(var(--pt)*8)">H{{ heading.level }}</div>
+        <div class="el tag tag--h{{ heading.level }} middle center" style="{{ box((S.MARGIN_X + indent, row_y + (S.HEADING_ROW_HEIGHT - L.TAG_SIZE[1]) / 2, L.TAG_SIZE[0], L.TAG_SIZE[1])) }};font-size:calc(var(--fpt)*8)">H{{ heading.level }}</div>
         {% set text_x = S.MARGIN_X + indent + L.HEADING_TEXT_OFFSET %}
         {{ text((text_x, row_y, L.RIGHT_EDGE - text_x, S.HEADING_ROW_HEIGHT), heading.text, 11.5, "middle nowrap") }}
         {{ hline(row_y + S.HEADING_ROW_HEIGHT, "line dashed") }}
@@ -156,7 +157,7 @@
         {{ text(L.CLOSING_TITLE, "Thank you", 40, "bold primary center") }}
         {{ rect(L.CLOSING_BAR, "accent-fill") }}
         {{ text(L.CLOSING_LEAD, "View the full report online", 14, "muted center") }}
-        <a class="el text bold primary center" href="{{ deck.share_url }}" style="{{ box(L.CLOSING_LINK) }};font-size:calc(var(--pt)*15)">{{ deck.share_url }}</a>
+        <a class="el text bold primary center" href="{{ deck.share_url }}" style="{{ box(L.CLOSING_LINK) }};font-size:calc(var(--fpt)*15)">{{ deck.share_url }}</a>
         {{ text(L.CLOSING_NOTE, deck.brand_name ~ "   ·   Generated " ~ deck.generated_at, 11, "muted center pre") }}
         {% endif %}
       </section>

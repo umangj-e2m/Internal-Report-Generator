@@ -17,6 +17,11 @@ export const reportService = {
     await apiClient.delete(ENDPOINTS.REPORT(slug));
   },
 
+  getStyleOptions: async () => (await apiClient.get(ENDPOINTS.STYLE_OPTIONS)).data,
+
+  updateStyle: async (slug, style) =>
+    (await apiClient.put(ENDPOINTS.REPORT_STYLE(slug), style)).data,
+
   htmlUrl: (slug) => buildApiUrl(ENDPOINTS.REPORT_HTML(slug)),
 
   pdfUrl: (slug, { download = false } = {}) =>

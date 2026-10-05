@@ -4,7 +4,9 @@ const reportBase = (slug) => `/reports/${encodeURIComponent(slug)}`;
 
 export const ENDPOINTS = {
   REPORTS: '/reports',
+  STYLE_OPTIONS: '/reports/style-options',
   REPORT: reportBase,
+  REPORT_STYLE: (slug) => `${reportBase(slug)}/style`,
   REPORT_HTML: (slug) => `${reportBase(slug)}/html`,
   REPORT_PDF: (slug) => `${reportBase(slug)}/pdf`,
   REPORT_DOCX: (slug) => `${reportBase(slug)}/docx`,

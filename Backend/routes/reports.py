@@ -1,14 +1,17 @@
+from dataclasses import asdict
+
 from fastapi import APIRouter, Depends, Query, Response, status
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
 from db import get_db
-from models.schemas.requests import CreateReportRequest
-from models.schemas.responses import ReportDetailOut, ReportListOut
+from models.schemas.requests import CreateReportRequest, UpdateReportStyleRequest
+from models.schemas.responses import ReportDetailOut, ReportListOut, StyleOptionsOut
 from services.exports.docx_export import render_report_docx
 from services.exports.html_export import render_report_html, render_slides_html
 from services.exports.pdf_export import render_report_pdf
 from services.exports.pptx_export import render_report_pptx
+from services.exports.themes import FONTS, PALETTES, SIZES
 from services.reports import service as report_service
 from services.reports.helpers import to_detail, to_summary
 from services.scraper.service import WebsiteScraper, get_scraper
@@ -38,9 +41,28 @@ def list_reports(
     return ReportListOut(items=[to_summary(item) for item in items], total=total, page=page, page_size=page_size)
 
 
+@router.get("/style-options", response_model=StyleOptionsOut)
+def get_style_options() -> StyleOptionsOut:
+    return StyleOptionsOut(
+        palettes=[asdict(palette) for palette in PALETTES.values()],
+        fonts=[asdict(font) for font in FONTS.values()],
+        sizes=[asdict(size) for size in SIZES.values()],
+    )
+
+
 @router.get("/{slug}", response_model=ReportDetailOut)
 def get_report(slug: str, db: Session = Depends(get_db)) -> ReportDetailOut:
     return to_detail(report_service.get_report(db, slug))
+
+
+@router.put("/{slug}/style", response_model=ReportDetailOut)
+def update_report_style(
+    slug: str, payload: UpdateReportStyleRequest, db: Session = Depends(get_db)
+) -> ReportDetailOut:
+    report = report_service.update_style(
+        db, slug, payload.palette, payload.font_family, payload.font_size
+    )
+    return to_detail(report)
 
 
 @router.get("/{slug}/html", response_class=HTMLResponse)

@@ -1,0 +1,6 @@
+:root {
+  --primary: #{{ theme.primary }};
+  --accent: #{{ theme.accent }};
+  --font-family: {{ theme.font.css_stack }};
+  --font-scale: {{ theme.scale }};
+}

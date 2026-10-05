@@ -10,6 +10,8 @@ import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 import { useReport } from '../hooks/useReport';
 import { reportService } from '../services/reportService';
 
+import ReportAppearanceSection from './ReportAppearanceSection';
+
 function ReportSidebarSection({ slug }) {
   const { data: report } = useReport(slug);
   const copy = useCopyToClipboard();
@@ -18,6 +20,7 @@ function ReportSidebarSection({ slug }) {
 
   return (
     <>
+      <ReportAppearanceSection report={report} />
       <SidebarSection title="Download">
         <SidebarItem
           icon={<PictureAsPdfOutlinedIcon fontSize="small" />}

@@ -51,6 +51,17 @@ def get_report(db: Session, slug: str) -> Report:
     return report
 
 
+def update_style(db: Session, slug: str, palette: str, font_family: str, font_size: str) -> Report:
+    report = get_report(db, slug)
+    report.palette = palette
+    report.font_family = font_family
+    report.font_size = font_size
+    db.commit()
+    db.refresh(report)
+    logger.info("Updated style of report %s to %s/%s/%s", slug, palette, font_family, font_size)
+    return report
+
+
 def delete_report(db: Session, slug: str) -> None:
     report = get_report(db, slug)
     db.delete(report)

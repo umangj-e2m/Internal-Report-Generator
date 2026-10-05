@@ -7,6 +7,7 @@ import { useState } from 'react';
 
 import { fadeInUp } from '@/styles/animations';
 
+import { useReport } from '../hooks/useReport';
 import { reportService } from '../services/reportService';
 
 const VIEWS = {
@@ -15,15 +16,19 @@ const VIEWS = {
   slides: { label: 'Slides', icon: <SlideshowOutlinedIcon />, src: reportService.slidesUrl },
 };
 
-function ReportViewer({ slug, title }) {
-  const [view, setView] = useState('html');
-  const [isLoading, setIsLoading] = useState(true);
-  const src = VIEWS[view].src(slug);
+const styleVersion = (style) =>
+  style ? [style.palette, style.font_family, style.font_size].join('-') : '';
 
-  const handleChange = (_, nextView) => {
-    setView(nextView);
-    setIsLoading(true);
-  };
+function ReportViewer({ slug, title }) {
+  const { data: report } = useReport(slug);
+  const [view, setView] = useState('html');
+  const [loadedFrame, setLoadedFrame] = useState(null);
+  const version = styleVersion(report?.style);
+  const src = version ? `${VIEWS[view].src(slug)}?v=${version}` : VIEWS[view].src(slug);
+  const frame = `${view}:${version}`;
+  const isLoading = loadedFrame !== frame;
+
+  const handleChange = (_, nextView) => setView(nextView);
 
   return (
     <Paper variant="outlined" sx={{ overflow: 'hidden', ...fadeInUp(120) }}>
@@ -93,10 +98,10 @@ function ReportViewer({ slug, title }) {
         ) : undefined}
         <Box
           component="iframe"
-          key={view}
+          key={frame}
           src={src}
           title={`${title} – ${VIEWS[view].label}`}
-          onLoad={() => setIsLoading(false)}
+          onLoad={() => setLoadedFrame(frame)}
           sx={{
             display: 'block',
             width: '100%',

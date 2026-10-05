@@ -1,10 +1,13 @@
 from io import BytesIO
 
 from docx import Document
+from pptx import Presentation
 
 from services.exports.charts import build_charts, build_page_chart
 from services.exports.docx_export import render_report_docx
-from services.exports.html_export import render_report_html
+from services.exports.html_export import render_report_html, render_slides_html
+from services.exports.pptx_export import render_report_pptx
+from services.exports.themes import DEFAULT_THEME, PALETTES
 
 
 def test_web_html_contains_header_summary_table_and_page_sections(sample_report):
@@ -80,8 +83,47 @@ def test_page_bar_chart_is_skipped_for_an_empty_page(sample_report):
     page = sample_report.pages[0]
     page.word_count = page.link_count = page.image_count = 0
 
-    assert build_page_chart(page, "png") is None
-    assert build_page_chart(sample_report.pages[1], "png").title == "Content breakdown"
+    assert build_page_chart(page, "png", DEFAULT_THEME) is None
+    assert build_page_chart(sample_report.pages[1], "png", DEFAULT_THEME).title == "Content breakdown"
+
+
+def _use_ocean_georgia_large(report) -> None:
+    report.palette, report.font_family, report.font_size = "ocean", "georgia", "large"
+
+
+def test_html_and_slides_use_the_report_style(sample_report):
+    _use_ocean_georgia_large(sample_report)
+    ocean = PALETTES["ocean"]
+
+    for html in (render_report_html(sample_report), render_slides_html(sample_report)):
+        assert f"--primary: #{ocean.primary};" in html
+        assert f"--accent: #{ocean.accent};" in html
+        assert "--font-family: Georgia, 'Times New Roman', Times, serif;" in html
+        assert "--font-scale: 1.1;" in html
+
+
+def test_docx_uses_the_report_style(sample_report):
+    _use_ocean_georgia_large(sample_report)
+
+    document = Document(BytesIO(render_report_docx(sample_report)))
+    normal = document.styles["Normal"]
+
+    assert normal.font.name == "Georgia"
+    assert normal.font.size.pt == 11.5
+    assert str(document.styles["Heading 1"].font.color.rgb) == PALETTES["ocean"].primary
+
+
+def test_pptx_uses_the_report_style(sample_report):
+    _use_ocean_georgia_large(sample_report)
+
+    presentation = Presentation(BytesIO(render_report_pptx(sample_report)))
+    runs = [run for shape in presentation.slides[0].shapes if shape.has_text_frame
+            for paragraph in shape.text_frame.paragraphs for run in paragraph.runs]
+    site_title = next(run for run in runs if run.text == sample_report.site_name)
+
+    assert {run.font.name for run in runs} == {"Georgia"}
+    assert site_title.font.size.pt == 48.5
+    assert str(site_title.font.color.rgb) == PALETTES["ocean"].primary
 
 
 def test_charts_appear_in_html_and_docx(sample_report):

@@ -10,7 +10,11 @@ import {
 import { createContext, useContext } from 'react';
 import { NavLink } from 'react-router-dom';
 
-export const SidebarContext = createContext({ collapsed: false, tooltipPlacement: 'right' });
+export const SidebarContext = createContext({
+  collapsed: false,
+  tooltipPlacement: 'right',
+  onExpand: undefined,
+});
 
 export function SidebarSection({ title, children }) {
   const { collapsed } = useContext(SidebarContext);
