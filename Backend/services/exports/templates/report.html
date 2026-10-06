@@ -11,6 +11,29 @@
     </style>
   </head>
   <body class="mode-{{ mode }}">
+    <section class="cover-page" aria-label="Cover page">
+      <div class="cover-page__brand">
+        {% if logo_src %}<img class="cover-page__logo" src="{{ logo_src }}" alt="{{ brand_name }} logo" style="height: {{ 64 * logo_scale }}px" />{% endif %}
+        {% if show_brand_name %}<span class="cover-page__brand-name">{{ brand_name }}</span>{% endif %}
+      </div>
+
+      <div class="cover-page__main">
+        <p class="eyebrow">{{ report_title }}</p>
+        <h1 class="cover-page__title">{{ report.site_name }}</h1>
+        <a class="cover-page__url" href="{{ report.source_url }}">{{ report.source_url }}</a>
+        <span class="cover-page__bar"></span>
+        <p class="cover-page__meta">
+          Generated {{ generated_at }} &nbsp;·&nbsp; {{ report.page_count }} page{{ "s" if report.page_count != 1 }} analysed
+        </p>
+      </div>
+
+      <div class="cover-page__footer">
+        <strong>{{ brand_name }}</strong>
+        <span>Website read on {{ created_at }}</span>
+      </div>
+    </section>
+
+    <div class="report-sheet">
     {% if mode == "web" %}
     <header class="web-header">
       <div class="web-header__brand">
@@ -25,10 +48,9 @@
     {% endif %}
 
     <main class="document">
-      <section class="cover">
-        <p class="eyebrow">{{ report_title }}</p>
-        <h1 class="cover__title">{{ report.site_name }}</h1>
-        <a class="cover__url" href="{{ report.source_url }}">{{ report.source_url }}</a>
+      <section class="overview">
+        <h2 class="section-title">Overview</h2>
+        <p class="section-lead">Key figures for <strong>{{ report.site_name }}</strong> (<a href="{{ report.source_url }}">{{ report.source_url }}</a>).</p>
 
         <div class="metrics">
           <div class="metric">
@@ -192,5 +214,6 @@
       <span>{{ brand_name }}</span>
     </footer>
     {% endif %}
+    </div>
   </body>
 </html>

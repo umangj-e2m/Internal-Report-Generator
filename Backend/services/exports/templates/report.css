@@ -44,7 +44,6 @@ p {
   font-style: italic;
 }
 
-/* ---------- Cover ---------- */
 .eyebrow {
   margin: 0 0 6px;
   font-size: calc(8.5pt * var(--font-scale));
@@ -54,17 +53,104 @@ p {
   color: var(--accent);
 }
 
-.cover__title {
-  margin: 0 0 4px;
-  font-size: calc(24pt * var(--font-scale));
-  line-height: 1.2;
+/* ---------- Cover page ---------- */
+.cover-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 56px 56px 40px 96px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.cover-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 28px;
+  background: var(--primary);
+}
+
+.cover-page__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+}
+
+.cover-page__logo {
+  display: block;
+  width: auto;
+  max-width: 300px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.cover-page__brand-name {
+  font-size: calc(16pt * var(--font-scale));
+  font-weight: 700;
   color: var(--primary);
 }
 
-.cover__url {
-  display: inline-block;
-  margin-bottom: 18px;
-  font-size: calc(10pt * var(--font-scale));
+.cover-page__main {
+  margin: auto 0;
+  padding: 48px 0;
+}
+
+.cover-page .eyebrow {
+  margin-bottom: 14px;
+  font-size: calc(11pt * var(--font-scale));
+  letter-spacing: 0.18em;
+}
+
+.cover-page__title {
+  margin: 0 0 10px;
+  font-size: calc(36pt * var(--font-scale));
+  line-height: 1.15;
+  color: var(--primary);
+  overflow-wrap: anywhere;
+}
+
+.cover-page__url {
+  font-size: calc(13pt * var(--font-scale));
+  color: var(--muted);
+}
+
+.cover-page__bar {
+  display: block;
+  width: 88px;
+  height: 5px;
+  margin: 30px 0 18px;
+  background: var(--accent);
+}
+
+.cover-page__meta {
+  margin: 0;
+  font-size: calc(11pt * var(--font-scale));
+  color: var(--muted);
+}
+
+.cover-page__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding-top: 14px;
+  font-size: calc(9.5pt * var(--font-scale));
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+}
+
+.cover-page__footer strong {
+  font-size: calc(11pt * var(--font-scale));
+  color: var(--primary);
+}
+
+/* ---------- Overview ---------- */
+.overview .section-lead a {
   color: var(--muted);
 }
 
@@ -382,6 +468,22 @@ p {
 }
 
 /* ---------- Print (PDF) mode ---------- */
+/* The cover fills the whole first sheet, edge to edge. */
+@page :first {
+  margin: 0;
+}
+
+.mode-print .cover-page {
+  height: 296mm;
+  padding: 30mm 20mm 18mm 32mm;
+  break-after: page;
+  page-break-after: always;
+}
+
+.mode-print .cover-page::before {
+  width: 9mm;
+}
+
 .mode-print .page-section {
   break-before: page;
   page-break-before: always;
@@ -399,26 +501,39 @@ p {
 }
 
 /* ---------- Web (HTML view) mode ---------- */
+/* Sheets mirror the PDF view: A4 pages up to 900px wide; --mm is one millimetre of that page. */
 .mode-web {
+  --sheet: min(900px, calc(100vw - 48px));
+  --mm: calc(var(--sheet) / 210);
+  padding: 24px 0;
   background: #eceff4;
 }
 
-.mode-web .web-header,
-.mode-web .web-footer,
-.mode-web .document {
-  max-width: 900px;
+.mode-web .cover-page,
+.mode-web .report-sheet {
+  width: var(--sheet);
   margin: 0 auto;
   background: #ffffff;
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.12);
+}
+
+.mode-web .cover-page {
+  aspect-ratio: 210 / 297;
+  border-bottom: 1px solid var(--border);
+  clip-path: inset(-40px -40px 0 -40px);
+  padding: calc(var(--mm) * 30) calc(var(--mm) * 20) calc(var(--mm) * 18) calc(var(--mm) * 32);
+}
+
+.mode-web .cover-page::before {
+  width: calc(var(--mm) * 9);
 }
 
 .mode-web .web-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 24px;
   padding: 16px 40px;
   border-bottom: 1px solid var(--border);
-  border-radius: 10px 10px 0 0;
 }
 
 .web-header__brand {
@@ -461,12 +576,10 @@ p {
 .mode-web .web-footer {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 24px;
   padding: 14px 40px;
   font-size: calc(9pt * var(--font-scale));
   color: var(--muted);
   border-top: 1px solid var(--border);
-  border-radius: 0 0 10px 10px;
 }
 
 @media screen and (max-width: 720px) {
@@ -481,9 +594,13 @@ p {
     padding-right: 18px;
   }
 
-  .mode-web .web-header {
-    margin-top: 0;
-    border-radius: 0;
+  .mode-web {
+    --sheet: calc(100vw - 24px);
+    padding: 12px 0;
+  }
+
+  .cover-page__title {
+    font-size: calc(26pt * var(--font-scale));
   }
 
   .col-description {

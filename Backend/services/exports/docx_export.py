@@ -19,6 +19,7 @@ from services.exports.helpers import (
     compute_totals,
     generated_at_label,
     header_logo_height_mm,
+    logo_aspect,
     logo_path,
     page_description,
     show_brand_name,
@@ -64,6 +65,12 @@ PAGE_BADGE_RADIUS = 18_000
 PAGE_BADGE_WIDTH = Mm(14)
 PAGE_TITLE_TOP_SPACE = Pt(12)
 HEADING_H2_INDENT = Mm(4.8)
+COVER_STRIP_WIDTH = Mm(9)
+COVER_INDENT = Mm(16)
+COVER_LOGO_HEIGHT = Mm(16)
+COVER_LOGO_MAX_WIDTH = Mm(75)
+COVER_TITLE_TOP_SPACE = Mm(62)
+COVER_BAR_SIZE = (Mm(22), Mm(1.6))
 WPS_NS = "http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
 
 _theme: ContextVar[ReportTheme] = ContextVar("docx_theme", default=DEFAULT_THEME)
@@ -110,8 +117,10 @@ def _render(report: Report) -> bytes:
     _setup_page(section)
     _build_header(section, report.site_name)
     _build_footer(section, report.site_name)
+    _build_cover_footer(section, report)
 
-    _build_cover(doc, report)
+    _build_cover_page(doc, report)
+    _build_overview(doc, report)
     _build_summary(doc, report)
     _build_charts(doc, report)
     for page in report.pages:
@@ -226,22 +235,82 @@ def _build_footer(section: Section, site_name: str) -> None:
     _add_field(paragraph, "NUMPAGES")
 
 
+def _build_cover_footer(section: Section, report: Report) -> None:
+    """The cover page has no running header; its footer carries the brand instead."""
+    section.different_first_page_header_footer = True
+    paragraph = section.first_page_footer.paragraphs[0]
+    paragraph.style = "Normal"
+    paragraph.paragraph_format.space_after = Pt(0)
+    paragraph.paragraph_format.left_indent = COVER_INDENT
+    paragraph.paragraph_format.tab_stops.add_tab_stop(
+        Emu(CONTENT_WIDTH - COVER_INDENT), WD_TAB_ALIGNMENT.RIGHT
+    )
+    _set_paragraph_border(paragraph, "top", space=6)
+    read_on = format_display(report.created_at, get_settings().report_timezone)
+    _run(paragraph, _theme.get().brand.name, size=11, bold=True, color=_primary())
+    _run(paragraph, f"\tWebsite read on {read_on}", size=9, color=MUTED)
+
+
 # ---------- Content ----------
-def _build_cover(doc: DocxDocument, report: Report) -> None:
+def _build_cover_page(doc: DocxDocument, report: Report) -> None:
+    brand = _theme.get().brand
+
+    holder = doc.add_paragraph()
+    _tighten(holder)
+    holder.paragraph_format.left_indent = COVER_INDENT
+    _page_strip(holder, COVER_STRIP_WIDTH, _theme.get().primary)
+    logo = logo_path(brand)
+    if logo:
+        aspect = logo_aspect(brand)
+        width = min(COVER_LOGO_MAX_WIDTH, int(COVER_LOGO_HEIGHT * brand.logo_scale * aspect))
+        holder.add_run().add_picture(str(logo), width=Emu(width), height=Emu(int(width / aspect)))
+    if show_brand_name(brand):
+        _run(holder, f"  {brand.name}", size=16, bold=True, color=_primary())
+
+    eyebrow = doc.add_paragraph()
+    eyebrow.paragraph_format.left_indent = COVER_INDENT
+    eyebrow.paragraph_format.space_before = COVER_TITLE_TOP_SPACE
+    eyebrow.paragraph_format.space_after = Pt(8)
+    _letter_spacing(_run(eyebrow, REPORT_TITLE.upper(), size=11, bold=True, color=_accent()), 2)
+
+    title = doc.add_paragraph()
+    title.paragraph_format.left_indent = COVER_INDENT
+    title.paragraph_format.space_after = Pt(4)
+    title.paragraph_format.line_spacing = 1.0
+    _run(title, report.site_name, size=34, bold=True, color=_primary())
+
+    url = doc.add_paragraph()
+    url.paragraph_format.left_indent = COVER_INDENT
+    url.paragraph_format.space_after = Pt(20)
+    _run(url, report.source_url, size=13, color=MUTED)
+
+    bar = doc.add_paragraph()
+    _tighten(bar)
+    bar.paragraph_format.left_indent = COVER_INDENT
+    bar.paragraph_format.space_after = Pt(14)
+    _rounded_box(bar, width=COVER_BAR_SIZE[0], height=COVER_BAR_SIZE[1],
+                 fill=_solid_fill(_theme.get().accent), outline=None, radius=0,
+                 insets=(0, 0, 0, 0))
+
+    plural = "s" if report.page_count != 1 else ""
+    meta = doc.add_paragraph()
+    meta.paragraph_format.left_indent = COVER_INDENT
+    _run(meta, f"Generated {generated_at_label()}   ·   {report.page_count} page{plural} analysed",
+         size=11, color=MUTED)
+
+
+def _build_overview(doc: DocxDocument, report: Report) -> None:
     settings = get_settings()
     totals = compute_totals(report)
 
-    eyebrow = doc.add_paragraph()
-    eyebrow.paragraph_format.space_after = Pt(2)
-    _letter_spacing(_run(eyebrow, REPORT_TITLE.upper(), size=8.5, bold=True, color=_accent()), 1.2)
-
-    title = doc.add_paragraph()
-    title.paragraph_format.space_after = Pt(2)
-    _run(title, report.site_name, size=24, bold=True, color=_primary())
-
-    url = doc.add_paragraph()
-    url.paragraph_format.space_after = Pt(12)
-    _run(url, report.source_url, size=10, color=MUTED)
+    heading = doc.add_heading("Overview", level=1)
+    heading.paragraph_format.page_break_before = True
+    _set_paragraph_border(heading, "bottom", _theme.get().accent, size=12)
+    lead = doc.add_paragraph()
+    lead.paragraph_format.space_after = Pt(10)
+    _run(lead, "Key figures for ", color=MUTED)
+    _run(lead, report.site_name, bold=True, color=_primary())
+    _run(lead, f" ({report.source_url}).", color=MUTED)
 
     metrics = [
         ("Pages analysed", f"{report.page_count}"),
@@ -662,6 +731,32 @@ def _rounded_box(holder: Paragraph, width: int, height: int, fill: str, outline:
     for box in boxes:
         _tighten(box)
     return boxes
+
+
+def _page_strip(holder: Paragraph, width: int, color: str) -> None:
+    """A full-height colour band along the left edge of the page, drawn behind the text."""
+    shape_id = 1000 + len(holder.part.element.findall(".//" + qn("wp:docPr")))
+    height = int(PAGE_HEIGHT)
+    xml = (
+        f'<w:drawing xmlns:w="{nsmap["w"]}" xmlns:wp="{nsmap["wp"]}" xmlns:a="{nsmap["a"]}" '
+        f'xmlns:wps="{WPS_NS}">'
+        '<wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="0" '
+        'behindDoc="1" locked="1" layoutInCell="1" allowOverlap="1">'
+        '<wp:simplePos x="0" y="0"/>'
+        '<wp:positionH relativeFrom="page"><wp:posOffset>0</wp:posOffset></wp:positionH>'
+        '<wp:positionV relativeFrom="page"><wp:posOffset>0</wp:posOffset></wp:positionV>'
+        f'<wp:extent cx="{int(width)}" cy="{height}"/>'
+        '<wp:effectExtent l="0" t="0" r="0" b="0"/>'
+        "<wp:wrapNone/>"
+        f'<wp:docPr id="{shape_id}" name="Strip {shape_id}"/>'
+        "<wp:cNvGraphicFramePr/>"
+        f'<a:graphic><a:graphicData uri="{WPS_NS}"><wps:wsp><wps:cNvSpPr/>'
+        f'<wps:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{int(width)}" cy="{height}"/></a:xfrm>'
+        f'<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>{_solid_fill(color)}'
+        "<a:ln><a:noFill/></a:ln></wps:spPr><wps:bodyPr/>"
+        "</wps:wsp></a:graphicData></a:graphic></wp:anchor></w:drawing>"
+    )
+    holder.add_run()._r.append(parse_xml(xml))
 
 
 def _collapse_paragraph(paragraph: Paragraph) -> None:

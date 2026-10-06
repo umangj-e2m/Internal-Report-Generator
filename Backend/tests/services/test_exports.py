@@ -2,10 +2,12 @@ from io import BytesIO
 
 from docx import Document
 from pptx import Presentation
+from pypdf import PdfReader
 
 from services.exports.charts import build_charts, build_page_chart
 from services.exports.docx_export import render_report_docx
 from services.exports.html_export import render_report_html, render_slides_html
+from services.exports.pdf_export import render_report_pdf
 from services.exports.pptx_export import render_report_pptx
 from config import get_settings
 from services.exports.slide_layout import fit_logo
@@ -90,6 +92,42 @@ def test_print_html_leaves_header_and_footer_to_pdf_renderer(sample_report):
     assert 'class="web-header"' not in html
     assert 'class="web-footer"' not in html
     assert 'class="mode-print"' in html
+
+
+def test_html_opens_with_a_cover_page_in_both_modes(sample_report):
+    for mode in ("web", "print"):
+        html = render_report_html(sample_report, mode=mode)
+        cover = html.split('class="cover-page"')[1].split("</section>")[0]
+
+        assert html.index('class="cover-page"') < html.index('class="overview"')
+        assert "Website Content Report" in cover
+        assert "Sample &lt;Site&gt;" in cover
+        assert "https://sample.test/" in cover
+        assert "2 pages analysed" in cover
+        assert "E2M Solutions" in cover
+
+
+def test_pdf_cover_page_has_no_running_header_or_footer(sample_report):
+    reader = PdfReader(BytesIO(render_report_pdf(sample_report)))
+    cover_text = reader.pages[0].extract_text()
+    second_page_text = reader.pages[1].extract_text()
+
+    assert "Website read on" in cover_text
+    assert "Page " not in cover_text
+    assert "Overview" in second_page_text and "Page 2 of" in second_page_text
+
+
+def test_docx_opens_with_a_cover_page_without_the_running_header(sample_report):
+    document = Document(BytesIO(render_report_docx(sample_report)))
+    section = document.sections[0]
+    texts = [paragraph.text for paragraph in document.paragraphs]
+    overview = next(p for p in document.paragraphs if p.text == "Overview")
+
+    assert section.different_first_page_header_footer
+    assert "E2M Solutions" in section.first_page_footer.paragraphs[0].text
+    assert texts.index("WEBSITE CONTENT REPORT") < texts.index("Overview")
+    assert "Sample <Site>" in texts
+    assert overview.paragraph_format.page_break_before
 
 
 def test_docx_has_logo_header_page_number_footer_and_repeating_table_header(sample_report):

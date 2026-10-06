@@ -1,6 +1,8 @@
 from html import escape
+from io import BytesIO
 
 from playwright.sync_api import sync_playwright
+from pypdf import PdfWriter
 
 from models.db import Report
 from services.exports.helpers import (
@@ -68,9 +70,13 @@ def render_report_pdf(report: Report) -> bytes:
             page = browser.new_page()
             page.set_content(html, wait_until="load")
             page.emulate_media(media="print")
-            return page.pdf(
+            # Chromium can't skip the running header/footer on one page, so the cover sheet is
+            # printed on its own without them and joined to the rest of the report.
+            cover = page.pdf(format="A4", print_background=True, page_ranges="1")
+            body = page.pdf(
                 format="A4",
                 print_background=True,
+                page_ranges="2-",
                 display_header_footer=True,
                 header_template=_header_template(report.site_name, theme),
                 footer_template=_footer_template(report.site_name, theme),
@@ -78,3 +84,13 @@ def render_report_pdf(report: Report) -> bytes:
             )
         finally:
             browser.close()
+    return _join_pdfs(cover, body)
+
+
+def _join_pdfs(*documents: bytes) -> bytes:
+    writer = PdfWriter()
+    for document in documents:
+        writer.append(BytesIO(document))
+    buffer = BytesIO()
+    writer.write(buffer)
+    return buffer.getvalue()
