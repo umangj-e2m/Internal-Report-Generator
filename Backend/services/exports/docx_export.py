@@ -16,6 +16,8 @@ from config import get_settings
 from models.db import Report, ReportPage
 from services.exports.charts import ReportChart, build_charts, build_page_chart
 from services.exports.helpers import (
+    WATERMARK_ANGLE,
+    WATERMARK_OPACITY,
     compute_totals,
     generated_at_label,
     header_logo_height_mm,
@@ -23,6 +25,7 @@ from services.exports.helpers import (
     logo_path,
     page_description,
     show_brand_name,
+    watermark_font_size,
 )
 from services.exports.themes import (
     BORDER_HEX,
@@ -71,6 +74,7 @@ COVER_LOGO_HEIGHT = Mm(16)
 COVER_LOGO_MAX_WIDTH = Mm(75)
 COVER_TITLE_TOP_SPACE = Mm(62)
 COVER_BAR_SIZE = (Mm(22), Mm(1.6))
+WATERMARK_BOX = (Mm(190), Mm(45))
 WPS_NS = "http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
 
 _theme: ContextVar[ReportTheme] = ContextVar("docx_theme", default=DEFAULT_THEME)
@@ -192,6 +196,7 @@ def _build_header(section: Section, site_name: str) -> None:
     trailing = header.paragraphs[0]
     trailing._p.addprevious(table._tbl)
     _collapse_paragraph(trailing)
+    _watermark(trailing)
 
     logo_cell, brand_cell, title_cell = table.rows[0].cells
     for cell in table.rows[0].cells:
@@ -731,6 +736,46 @@ def _rounded_box(holder: Paragraph, width: int, height: int, fill: str, outline:
     for box in boxes:
         _tighten(box)
     return boxes
+
+
+def _watermark(holder: Paragraph) -> None:
+    """The company name across the middle of every page that uses this header, behind the text."""
+    theme = _theme.get()
+    name = theme.brand.name
+    shape_id = 1000 + len(holder.part.element.findall(".//" + qn("wp:docPr")))
+    width, height = int(WATERMARK_BOX[0]), int(WATERMARK_BOX[1])
+    rotation = (360 + WATERMARK_ANGLE) % 360 * 60_000
+    xml = (
+        f'<w:drawing xmlns:w="{nsmap["w"]}" xmlns:wp="{nsmap["wp"]}" xmlns:a="{nsmap["a"]}" '
+        f'xmlns:wps="{WPS_NS}">'
+        '<wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="0" '
+        'behindDoc="1" locked="1" layoutInCell="1" allowOverlap="1">'
+        '<wp:simplePos x="0" y="0"/>'
+        '<wp:positionH relativeFrom="page"><wp:align>center</wp:align></wp:positionH>'
+        '<wp:positionV relativeFrom="page"><wp:align>center</wp:align></wp:positionV>'
+        f'<wp:extent cx="{width}" cy="{height}"/>'
+        '<wp:effectExtent l="0" t="0" r="0" b="0"/>'
+        "<wp:wrapNone/>"
+        f'<wp:docPr id="{shape_id}" name="Watermark {shape_id}"/>'
+        "<wp:cNvGraphicFramePr/>"
+        f'<a:graphic><a:graphicData uri="{WPS_NS}"><wps:wsp><wps:cNvSpPr txBox="1"/>'
+        f'<wps:spPr><a:xfrm rot="{rotation}"><a:off x="0" y="0"/><a:ext cx="{width}" cy="{height}"/></a:xfrm>'
+        '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></wps:spPr>'
+        "<wps:txbx><w:txbxContent><w:p/></w:txbxContent></wps:txbx>"
+        '<wps:bodyPr rot="0" vert="horz" wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" '
+        'anchor="ctr" anchorCtr="0"><a:noAutofit/></wps:bodyPr>'
+        "</wps:wsp></a:graphicData></a:graphic></wp:anchor></w:drawing>"
+    )
+    drawing = parse_xml(xml)
+    holder.add_run()._r.append(drawing)
+    text = Paragraph(drawing.find(".//" + qn("w:p")), holder._parent)
+    _tighten(text)
+    text.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = text.add_run(name)
+    run.font.bold = True
+    run.font.size = Pt(watermark_font_size(name, WATERMARK_BOX[0].pt, 80))
+    # Word text has no opacity, so the colour is pre-blended with the white page instead.
+    run.font.color.rgb = RGBColor.from_string(theme.tint(theme.primary, 1 - WATERMARK_OPACITY))
 
 
 def _page_strip(holder: Paragraph, width: int, color: str) -> None:

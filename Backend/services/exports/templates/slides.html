@@ -163,6 +163,10 @@
         <a class="el text bold primary center" href="{{ deck.share_url }}" style="{{ box(L.CLOSING_LINK) }};font-size:calc(var(--fpt)*15)">{{ deck.share_url }}</a>
         {{ text(L.CLOSING_NOTE, deck.brand_name ~ "   ·   Generated " ~ deck.generated_at, 11, "muted center pre") }}
         {% endif %}
+
+        {% if slide.kind not in ("title", "closing") %}
+        <div class="el watermark" aria-hidden="true" style="{{ box(L.WATERMARK) }};{{ watermark_style }}">{{ deck.brand_name }}</div>
+        {% endif %}
       </section>
       {% endfor %}
     </main>

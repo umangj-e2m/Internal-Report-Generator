@@ -4,7 +4,8 @@ from app import app
 from services.scraper.service import get_scraper
 from tests.fixtures.sample_site import BASE, make_scraper
 
-DEFAULT_STYLE = {"brand": "e2m", "palette": "mono", "font_family": "segoe", "font_size": "medium"}
+DEFAULT_STYLE = {"brand": "explore", "palette": "emerald", "font_family": "trebuchet",
+                 "font_size": "medium"}
 
 
 def _create(client, url: str = f"{BASE}/") -> dict:
@@ -79,6 +80,7 @@ def test_style_options_list_palettes_fonts_and_sizes(client):
     options = response.json()
     assert [item["key"] for item in options["palettes"]] == [
         "mono", "classic", "ocean", "berry", "forest", "royal", "charcoal", "emerald", "amber",
+        "azure",
     ]
     assert [item["key"] for item in options["fonts"]] == [
         "segoe", "georgia", "calibri", "arial", "cambria", "trebuchet",
@@ -88,13 +90,13 @@ def test_style_options_list_palettes_fonts_and_sizes(client):
     assert set(options["palettes"][0]) == {"key", "label", "primary", "accent"}
     assert options["defaults"] == DEFAULT_STYLE
     assert options["brands"] == [
-        {"key": "e2m", "name": "E2M Solutions", "logo_file": "E2M_Logo-Black.png",
-         "style": DEFAULT_STYLE},
         {"key": "explore", "name": "Explore Media", "logo_file": "explore_logo.png",
-         "style": {"brand": "explore", "palette": "emerald", "font_family": "trebuchet",
+         "style": DEFAULT_STYLE},
+        {"key": "e2m", "name": "E2M Solutions", "logo_file": "E2M_Logo-Black.png",
+         "style": {"brand": "e2m", "palette": "mono", "font_family": "segoe",
                    "font_size": "medium"}},
-        {"key": "inexture", "name": "Inexture", "logo_file": "inx-dark-logos-new.png",
-         "style": {"brand": "inexture", "palette": "amber", "font_family": "calibri",
+        {"key": "tridhya", "name": "Tridhya Tech", "logo_file": "logo.png",
+         "style": {"brand": "tridhya", "palette": "azure", "font_family": "calibri",
                    "font_size": "medium"}},
     ]
 

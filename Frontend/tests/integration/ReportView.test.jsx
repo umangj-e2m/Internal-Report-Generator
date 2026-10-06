@@ -113,7 +113,7 @@ describe('Report view page (shareable link)', () => {
       'aria-pressed',
       'false',
     );
-    expect(screen.getByRole('button', { name: 'Inexture branding' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Tridhya Tech branding' })).toHaveAttribute(
       'aria-pressed',
       'false',
     );
@@ -123,7 +123,7 @@ describe('Report view page (shareable link)', () => {
   });
 
   it('applies a company logo, palette, font and size in one click', async () => {
-    const explore = sampleStyleOptions.brands[1].style;
+    const explore = sampleStyleOptions.brands[0].style;
     reportService.updateStyle.mockResolvedValue({ ...sampleReportDetail, style: explore });
     const user = userEvent.setup();
     renderView();
@@ -153,16 +153,16 @@ describe('Report view page (shareable link)', () => {
   });
 
   it('re-applies the company style to a report saved with other colours', async () => {
-    const inexture = sampleStyleOptions.brands[2].style;
-    const oldStyle = { ...inexture, palette: 'royal', font_family: 'times', font_size: 'large' };
+    const tridhya = sampleStyleOptions.brands[2].style;
+    const oldStyle = { ...tridhya, palette: 'royal', font_family: 'times', font_size: 'large' };
     reportService.get.mockResolvedValue({ ...sampleReportDetail, style: oldStyle });
-    reportService.updateStyle.mockResolvedValue({ ...sampleReportDetail, style: inexture });
+    reportService.updateStyle.mockResolvedValue({ ...sampleReportDetail, style: tridhya });
     const user = userEvent.setup();
     renderView();
 
-    await user.click(await screen.findByRole('button', { name: 'Inexture branding' }));
+    await user.click(await screen.findByRole('button', { name: 'Tridhya Tech branding' }));
 
-    expect(reportService.updateStyle).toHaveBeenCalledWith('acme-cloud-docs-demo01', inexture);
+    expect(reportService.updateStyle).toHaveBeenCalledWith('acme-cloud-docs-demo01', tridhya);
   });
 
   it('shows a not-found message for an unknown slug', async () => {

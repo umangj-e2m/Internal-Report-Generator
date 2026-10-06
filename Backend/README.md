@@ -74,8 +74,8 @@ A website that cannot be read returns `422` with a readable `detail` message; an
 | `scripts/data/` | `seed_reports.py` |
 | `tests/` | `services/`, `routes/`, `integration/`, `smoke/`, shared `fixtures/` |
 
-Each report is branded for one company (`BRANDS` in `services/exports/themes.py`: E2M Solutions,
-Explore Media, Inexture). The brand sets the logo and company name in every export and its default
+Each report is branded for one company (`BRANDS` in `services/exports/themes.py`: Explore Media,
+which is the default for new reports, E2M Solutions, Tridhya Tech). The brand sets the logo and company name in every export and its default
 palette, font and text size. Logos are read from `REPORT_LOGO_DIR` (default: `../Frontend/public`),
 so the frontend and the exported documents always use the same files. To add a company, put its
 logo in that folder and add a `Brand` entry; set `wordmark=True` when the logo already spells the

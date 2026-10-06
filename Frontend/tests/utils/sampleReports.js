@@ -7,6 +7,12 @@ export const sampleReport = {
   share_url: 'http://localhost:3000/api/reports/acme-cloud-docs-demo01/html',
 };
 
+const exploreStyle = {
+  brand: 'explore',
+  palette: 'emerald',
+  font_family: 'trebuchet',
+  font_size: 'medium',
+};
 const e2mStyle = { brand: 'e2m', palette: 'mono', font_family: 'segoe', font_size: 'medium' };
 
 export const sampleReportDetail = {
@@ -26,6 +32,7 @@ export const sampleStyleOptions = {
     { key: 'charcoal', label: 'Charcoal', primary: '2D3142', accent: 'E63946' },
     { key: 'emerald', label: 'Emerald', primary: '0C304F', accent: '2EBD54' },
     { key: 'amber', label: 'Amber', primary: '1D2333', accent: 'FCA91F' },
+    { key: 'azure', label: 'Azure', primary: '00517C', accent: '06B6E8' },
   ],
   fonts: [
     { key: 'segoe', label: 'Segoe UI', css_stack: "'Segoe UI', Arial, sans-serif" },
@@ -42,24 +49,14 @@ export const sampleStyleOptions = {
     { key: 'large', label: 'Large' },
   ],
   brands: [
+    { key: 'explore', name: 'Explore Media', logo_file: 'explore_logo.png', style: exploreStyle },
     { key: 'e2m', name: 'E2M Solutions', logo_file: 'E2M_Logo-Black.png', style: e2mStyle },
     {
-      key: 'explore',
-      name: 'Explore Media',
-      logo_file: 'explore_logo.png',
-      style: {
-        brand: 'explore',
-        palette: 'emerald',
-        font_family: 'trebuchet',
-        font_size: 'medium',
-      },
-    },
-    {
-      key: 'inexture',
-      name: 'Inexture',
-      logo_file: 'inx-dark-logos-new.png',
-      style: { brand: 'inexture', palette: 'amber', font_family: 'calibri', font_size: 'medium' },
+      key: 'tridhya',
+      name: 'Tridhya Tech',
+      logo_file: 'logo.png',
+      style: { brand: 'tridhya', palette: 'azure', font_family: 'calibri', font_size: 'medium' },
     },
   ],
-  defaults: e2mStyle,
+  defaults: exploreStyle,
 };

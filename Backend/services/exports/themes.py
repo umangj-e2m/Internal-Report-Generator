@@ -46,6 +46,7 @@ PALETTES = {
         Palette("charcoal", "Charcoal", "2D3142", "E63946"),
         Palette("emerald", "Emerald", "0C304F", "2EBD54"),
         Palette("amber", "Amber", "1D2333", "FCA91F"),
+        Palette("azure", "Azure", "00517C", "06B6E8"),
     )
 }
 
@@ -115,16 +116,16 @@ class Brand:
 BRANDS = {
     brand.key: brand
     for brand in (
-        Brand("e2m", "E2M Solutions", "E2M_Logo-Black.png", "mono", "segoe", "medium",
-              wordmark=True),
         Brand("explore", "Explore Media", "explore_logo.png", "emerald", "trebuchet", "medium",
               wordmark=True),
-        Brand("inexture", "Inexture", "inx-dark-logos-new.png", "amber", "calibri", "medium",
+        Brand("e2m", "E2M Solutions", "E2M_Logo-Black.png", "mono", "segoe", "medium",
+              wordmark=True),
+        Brand("tridhya", "Tridhya Tech", "logo.png", "azure", "calibri", "medium",
               wordmark=True, logo_scale=0.75),
     )
 }
 
-DEFAULT_BRAND = "e2m"
+DEFAULT_BRAND = "explore"
 DEFAULT_PALETTE = BRANDS[DEFAULT_BRAND].palette
 DEFAULT_FONT = BRANDS[DEFAULT_BRAND].font_family
 DEFAULT_SIZE = BRANDS[DEFAULT_BRAND].font_size

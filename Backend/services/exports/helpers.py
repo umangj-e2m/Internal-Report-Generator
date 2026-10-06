@@ -2,14 +2,16 @@ import base64
 import logging
 from dataclasses import dataclass
 from functools import lru_cache
+from html import escape
 from pathlib import Path
+from urllib.parse import quote
 
 from PIL import Image
 
 from config import get_settings
 from models.db import Report
 from services.exports.charts import build_charts, build_page_chart
-from services.exports.themes import Brand, theme_for
+from services.exports.themes import Brand, ReportTheme, theme_for
 from services.reports.helpers import share_url
 from services.shared.constants import REPORT_TITLE
 from utils.dates import format_display, utcnow
@@ -19,6 +21,13 @@ logger = logging.getLogger(__name__)
 
 SUMMARY_TABLE_DESCRIPTION_CHARS = 150
 WIDE_LOGO_ASPECT = 1.5
+
+# The company-name watermark on every content page and slide (not the cover).
+WATERMARK_ANGLE = -35
+WATERMARK_OPACITY = 0.07
+WATERMARK_WIDTH_MM = 240  # on an A4 page
+WATERMARK_MAX_SIZE_MM = 30
+_WATERMARK_CHAR_WIDTH = 0.62  # average glyph width of a bold font, as a share of its size
 
 
 @dataclass(frozen=True)
@@ -81,6 +90,25 @@ def header_logo_height_mm(brand: Brand) -> float:
     return (7 if logo_aspect(brand) > WIDE_LOGO_ASPECT else 9) * brand.logo_scale
 
 
+def watermark_font_size(text: str, width: float, max_size: float) -> float:
+    """The largest size, in the units of `width`, at which `text` spans no more than `width`."""
+    return min(max_size, width / (max(len(text), 1) * _WATERMARK_CHAR_WIDTH))
+
+
+def watermark_svg_uri(theme: ReportTheme) -> str:
+    """An A4-sized SVG with the company name across its centre, for the HTML view and PDF pages."""
+    name = theme.brand.name
+    size = watermark_font_size(name, WATERMARK_WIDTH_MM, WATERMARK_MAX_SIZE_MM)
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297" width="210mm" height="297mm">'
+        f'<text x="105" y="148.5" transform="rotate({WATERMARK_ANGLE} 105 148.5)" '
+        'text-anchor="middle" dominant-baseline="middle" '
+        f'font-family="{escape(theme.font.css_stack)}" font-size="{size:.2f}" font-weight="700" '
+        f'fill="#{theme.primary}" fill-opacity="{WATERMARK_OPACITY}">{escape(name)}</text></svg>'
+    )
+    return "data:image/svg+xml;charset=utf-8," + quote(svg)
+
+
 def page_description(page, max_chars: int = SUMMARY_TABLE_DESCRIPTION_CHARS) -> str:
     return truncate(page.meta_description or page.summary, max_chars)
 
@@ -103,6 +131,7 @@ def build_context(report: Report) -> dict:
         "share_url": share_url(report.slug),
         "logo_src": logo_data_uri(theme.brand),
         "logo_scale": theme.brand.logo_scale,
+        "watermark_src": watermark_svg_uri(theme),
         "page_description": page_description,
         "fetched_label": lambda value: format_display(value, settings.report_timezone),
     }

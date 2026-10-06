@@ -528,6 +528,18 @@ p {
   width: calc(var(--mm) * 9);
 }
 
+.mode-web .report-sheet {
+  position: relative;
+}
+
+.mode-web .report-sheet::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--watermark) center top / 100% auto no-repeat space;
+  pointer-events: none;
+}
+
 .mode-web .web-header {
   display: flex;
   align-items: center;

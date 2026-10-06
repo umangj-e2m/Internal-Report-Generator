@@ -6,7 +6,14 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from models.db import Report
 from services.exports import slide_layout
 from services.exports import slides as slide_model
-from services.exports.helpers import build_context, logo_aspect, logo_data_uri, show_brand_name
+from services.exports.helpers import (
+    WATERMARK_ANGLE,
+    WATERMARK_OPACITY,
+    build_context,
+    logo_aspect,
+    logo_data_uri,
+    show_brand_name,
+)
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 
@@ -40,6 +47,10 @@ def render_slides_html(report: Report) -> str:
             box, aspect, align, brand.logo_scale
         ),
         box=_box,
+        watermark_style=(
+            f"font-size:calc(var(--fpt)*{slide_layout.watermark_size(brand.name):.1f});"
+            f"opacity:{WATERMARK_OPACITY};transform:rotate({WATERMARK_ANGLE}deg)"
+        ),
     )
 
 

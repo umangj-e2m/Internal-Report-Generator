@@ -11,7 +11,13 @@ from pptx.util import Emu, Pt
 
 from models.db import Report
 from services.exports import slide_layout as L
-from services.exports.helpers import logo_aspect, logo_path, show_brand_name
+from services.exports.helpers import (
+    WATERMARK_ANGLE,
+    WATERMARK_OPACITY,
+    logo_aspect,
+    logo_path,
+    show_brand_name,
+)
 from services.exports.slides import (
     BODY_TOP,
     CONTENT_WIDTH,
@@ -74,6 +80,8 @@ def _render(deck: SlideDeck) -> bytes:
         if item.kind not in ("title", "closing"):
             _chrome(slide, deck, item)
         builder(slide, deck, item)
+        if item.kind not in ("title", "closing"):
+            _watermark(slide, deck.brand_name)
 
     buffer = BytesIO()
     presentation.save(buffer)
@@ -255,6 +263,15 @@ def _chrome(slide, deck: SlideDeck, item: Slide) -> None:
           anchor=MSO_ANCHOR.MIDDLE)
     _text(slide, L.FOOTER_NUMBER, f"{item.number} / {len(deck.slides)}", 9, color=MUTED,
           align=PP_ALIGN.RIGHT, anchor=MSO_ANCHOR.MIDDLE)
+
+
+def _watermark(slide, text: str) -> None:
+    shape = _text(slide, L.WATERMARK, text, L.watermark_size(text), bold=True, color=_primary(),
+                  align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE, wrap=False)
+    shape.rotation = WATERMARK_ANGLE
+    color = shape.text_frame.paragraphs[0].runs[0].font.color._color._xClr
+    alpha = color.makeelement(qn("a:alpha"), {"val": str(round(WATERMARK_OPACITY * 100_000))})
+    color.append(alpha)
 
 
 def _slide_title(slide, title: str) -> None:

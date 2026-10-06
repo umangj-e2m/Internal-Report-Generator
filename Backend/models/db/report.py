@@ -4,6 +4,7 @@ from sqlalchemy import Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.db.base import Base, TimestampMixin
+from services.exports.themes import DEFAULT_BRAND, DEFAULT_FONT, DEFAULT_PALETTE, DEFAULT_SIZE
 
 if TYPE_CHECKING:
     from models.db.report_page import ReportPage
@@ -18,14 +19,14 @@ class Report(TimestampMixin, Base):
     source_url: Mapped[str] = mapped_column(String(2048), nullable=False)
     site_name: Mapped[str] = mapped_column(String(255), nullable=False)
     page_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    brand: Mapped[str] = mapped_column(String(20), nullable=False, default="e2m",
-                                       server_default="e2m")
-    palette: Mapped[str] = mapped_column(String(20), nullable=False, default="mono",
-                                         server_default="mono")
-    font_family: Mapped[str] = mapped_column(String(20), nullable=False, default="segoe",
-                                             server_default="segoe")
-    font_size: Mapped[str] = mapped_column(String(20), nullable=False, default="medium",
-                                           server_default="medium")
+    brand: Mapped[str] = mapped_column(String(20), nullable=False, default=DEFAULT_BRAND,
+                                       server_default=DEFAULT_BRAND)
+    palette: Mapped[str] = mapped_column(String(20), nullable=False, default=DEFAULT_PALETTE,
+                                         server_default=DEFAULT_PALETTE)
+    font_family: Mapped[str] = mapped_column(String(20), nullable=False, default=DEFAULT_FONT,
+                                             server_default=DEFAULT_FONT)
+    font_size: Mapped[str] = mapped_column(String(20), nullable=False, default=DEFAULT_SIZE,
+                                           server_default=DEFAULT_SIZE)
 
     pages: Mapped[list["ReportPage"]] = relationship(
         back_populates="report",

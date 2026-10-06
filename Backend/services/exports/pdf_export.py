@@ -2,20 +2,26 @@ from html import escape
 from io import BytesIO
 
 from playwright.sync_api import sync_playwright
-from pypdf import PdfWriter
+from pypdf import PdfReader, PdfWriter
 
 from models.db import Report
 from services.exports.helpers import (
     generated_at_label,
     header_logo_height_mm,
     logo_data_uri,
+    WATERMARK_ANGLE,
+    WATERMARK_MAX_SIZE_MM,
+    WATERMARK_OPACITY,
+    WATERMARK_WIDTH_MM,
     show_brand_name,
+    watermark_font_size,
 )
 from services.exports.html_export import render_report_html
 from services.exports.themes import BORDER_HEX, MUTED_HEX, ReportTheme, theme_for
 from services.shared.constants import REPORT_TITLE
 
 PAGE_MARGINS = {"top": "26mm", "bottom": "20mm", "left": "16mm", "right": "16mm"}
+NO_MARGINS = {"top": "0", "bottom": "0", "left": "0", "right": "0"}
 
 # Chromium renders header/footer templates in isolation: styles must be inline and
 # font-size must be set explicitly, otherwise the text is invisible.
@@ -82,15 +88,34 @@ def render_report_pdf(report: Report) -> bytes:
                 footer_template=_footer_template(report.site_name, theme),
                 margin=PAGE_MARGINS,
             )
+            page.set_content(_watermark_html(theme), wait_until="load")
+            watermark = page.pdf(format="A4", print_background=True, margin=NO_MARGINS)
         finally:
             browser.close()
-    return _join_pdfs(cover, body)
+    return _assemble(cover, body, watermark)
 
 
-def _join_pdfs(*documents: bytes) -> bytes:
+def _watermark_html(theme: ReportTheme) -> str:
+    name = theme.brand.name
+    size = watermark_font_size(name, WATERMARK_WIDTH_MM, WATERMARK_MAX_SIZE_MM)
+    return (
+        '<html><body style="margin:0">'
+        '<div style="display:flex;align-items:center;justify-content:center;'
+        'width:210mm;height:296mm;overflow:hidden;">'
+        f'<span style="font-family:{escape(theme.font.css_stack)};font-size:{size:.2f}mm;'
+        f'font-weight:700;white-space:nowrap;color:#{theme.primary};opacity:{WATERMARK_OPACITY};'
+        f'transform:rotate({WATERMARK_ANGLE}deg);">{escape(name)}</span>'
+        "</div></body></html>"
+    )
+
+
+def _assemble(cover: bytes, body: bytes, watermark: bytes) -> bytes:
+    """The cover followed by the body pages, each stamped with the watermark."""
+    stamp = PdfReader(BytesIO(watermark)).pages[0]
     writer = PdfWriter()
-    for document in documents:
-        writer.append(BytesIO(document))
+    writer.append(BytesIO(cover))
+    for body_page in PdfReader(BytesIO(body)).pages:
+        writer.add_page(body_page).merge_page(stamp)
     buffer = BytesIO()
     writer.write(buffer)
     return buffer.getvalue()

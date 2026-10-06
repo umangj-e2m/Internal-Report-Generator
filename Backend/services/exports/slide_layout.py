@@ -1,4 +1,5 @@
 """Element boxes (x, y, width, height in inches) shared by the PPTX and HTML slide renderers."""
+from services.exports.helpers import watermark_font_size
 from services.exports.slides import CONTENT_WIDTH, MARGIN_X, SLIDE_HEIGHT, SLIDE_WIDTH
 
 Box = tuple[float, float, float, float]
@@ -92,6 +93,16 @@ H2_INDENT = 0.35
 HEADING_TEXT_OFFSET = 0.55
 TEXT_BAR_WIDTH = 0.05
 TEXT_INSET_X = 0.25
+
+# ---------- Watermark (content slides) ----------
+WATERMARK: Box = (0.0, 0.0, SLIDE_WIDTH, SLIDE_HEIGHT)
+WATERMARK_TEXT_WIDTH = 10.0
+
+
+def watermark_size(text: str) -> float:
+    """Font size in points for the company-name watermark across the middle of a slide."""
+    return round(watermark_font_size(text, WATERMARK_TEXT_WIDTH * 72, 110), 1)
+
 
 # ---------- Closing slide ----------
 CLOSING_LOGO: Box = ((SLIDE_WIDTH - 3.6) / 2, 1.5, 3.6, 0.95)

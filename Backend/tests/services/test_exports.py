@@ -11,7 +11,9 @@ from services.exports.pdf_export import render_report_pdf
 from services.exports.pptx_export import render_report_pptx
 from config import get_settings
 from services.exports.slide_layout import fit_logo
-from services.exports.themes import BRANDS, DEFAULT_THEME, FONTS, PALETTES, SIZES
+from services.exports.themes import BRANDS, DEFAULT_BRAND, DEFAULT_THEME, FONTS, PALETTES, SIZES
+
+DEFAULT_BRAND_NAME = BRANDS[DEFAULT_BRAND].name
 
 
 def test_every_brand_has_a_logo_file_and_known_style_choices():
@@ -51,7 +53,7 @@ def test_docx_and_pptx_use_the_brand_logo_and_name(sample_report):
     _use_explore_brand(sample_report)
     document = Document(BytesIO(render_report_docx(sample_report)))
     presentation = Presentation(BytesIO(render_report_pptx(sample_report)))
-    header_text = "".join(document.sections[0].header._element.itertext())
+    header_text = "".join(document.sections[0].header.tables[0]._element.itertext())
     slide_texts = [shape.text_frame.text for slide in presentation.slides
                    for shape in slide.shapes if shape.has_text_frame]
 
@@ -104,7 +106,7 @@ def test_html_opens_with_a_cover_page_in_both_modes(sample_report):
         assert "Sample &lt;Site&gt;" in cover
         assert "https://sample.test/" in cover
         assert "2 pages analysed" in cover
-        assert "E2M Solutions" in cover
+        assert DEFAULT_BRAND_NAME in cover
 
 
 def test_pdf_cover_page_has_no_running_header_or_footer(sample_report):
@@ -124,10 +126,32 @@ def test_docx_opens_with_a_cover_page_without_the_running_header(sample_report):
     overview = next(p for p in document.paragraphs if p.text == "Overview")
 
     assert section.different_first_page_header_footer
-    assert "E2M Solutions" in section.first_page_footer.paragraphs[0].text
+    assert DEFAULT_BRAND_NAME in section.first_page_footer.paragraphs[0].text
     assert texts.index("WEBSITE CONTENT REPORT") < texts.index("Overview")
     assert "Sample <Site>" in texts
     assert overview.paragraph_format.page_break_before
+
+
+def test_every_format_has_the_company_watermark_except_the_cover(sample_report):
+    _use_explore_brand(sample_report)
+    html = render_report_html(sample_report, mode="web")
+    slides = render_slides_html(sample_report)
+    reader = PdfReader(BytesIO(render_report_pdf(sample_report)))
+    document = Document(BytesIO(render_report_docx(sample_report)))
+    presentation = Presentation(BytesIO(render_report_pptx(sample_report)))
+    section = document.sections[0]
+    pptx_watermarks = [any(shape.has_text_frame and shape.text_frame.text == "Explore Media"
+                           and shape.rotation for shape in slide.shapes)
+                       for slide in presentation.slides]
+
+    assert "--watermark: url('data:image/svg+xml" in html
+    assert slides.count('class="el watermark"') == slides.count('class="slide ') - 2
+    assert reader.pages[0].extract_text().count("Explore Media") == 1  # cover footer only
+    # Rotated text is extracted in pieces, so whitespace is ignored.
+    assert all("ExploreMedia" in "".join(page.extract_text().split()) for page in reader.pages[1:])
+    assert "Watermark" in section.header._element.xml
+    assert "Watermark" not in section.first_page_header._element.xml
+    assert pptx_watermarks == [False] + [True] * (len(presentation.slides) - 2) + [False]
 
 
 def test_docx_has_logo_header_page_number_footer_and_repeating_table_header(sample_report):

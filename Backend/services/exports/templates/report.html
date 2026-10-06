@@ -33,7 +33,7 @@
       </div>
     </section>
 
-    <div class="report-sheet">
+    <div class="report-sheet"{% if mode == "web" %} style="--watermark: url('{{ watermark_src }}')"{% endif %}>
     {% if mode == "web" %}
     <header class="web-header">
       <div class="web-header__brand">

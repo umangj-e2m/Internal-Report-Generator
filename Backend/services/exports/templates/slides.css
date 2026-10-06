@@ -180,6 +180,16 @@ body {
   line-height: calc(var(--in) * 0.25 * var(--font-scale));
 }
 
+.watermark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--primary);
+  pointer-events: none;
+}
+
 /* ---------- Summary table ---------- */
 .summary-table {
   border-collapse: collapse;
